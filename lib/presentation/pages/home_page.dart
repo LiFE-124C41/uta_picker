@@ -451,7 +451,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: GestureDetector(
           onTap: _handleTitleTap,
-          child: Text('Uta Picker'),
+          child: Text('UtaPicker'),
         ),
         actions: [
           if (_isDeveloperModeEnabled)

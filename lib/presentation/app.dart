@@ -7,7 +7,7 @@ import '../../domain/repositories/playlist_repository.dart';
 
 class MyApp extends StatelessWidget {
   final PlaylistRepository playlistRepository;
-  
+
   const MyApp({
     Key? key,
     required this.playlistRepository,
@@ -16,20 +16,19 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Song Picker',
+      title: 'UtaPicker',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: HomePage(
         playlistRepository: playlistRepository,
       ),
       routes: {
         '/playlist-management': (context) => PlaylistManagementPage(
-          playlistRepository: playlistRepository,
-        ),
+              playlistRepository: playlistRepository,
+            ),
         '/playlist-import': (context) => PlaylistImportPage(
-          playlistRepository: playlistRepository,
-        ),
+              playlistRepository: playlistRepository,
+            ),
       },
     );
   }
 }
-
