@@ -43,6 +43,9 @@ class _HomePageState extends State<HomePage> {
   int? currentPlaylistIndex;
   bool isPlayingPlaylist = false;
   bool _isPlaying = false;
+  bool _isDeveloperModeEnabled = false;
+  int _developerModeTapCount = 0;
+  Timer? _developerModeTapTimer;
 
   late WebPlayer _webPlayer;
   late DesktopPlayer _desktopPlayer;
@@ -280,9 +283,34 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void _handleTitleTap() {
+    _developerModeTapTimer?.cancel();
+    _developerModeTapCount++;
+
+    if (_developerModeTapCount >= 5) {
+      setState(() {
+        _isDeveloperModeEnabled = true;
+        _developerModeTapCount = 0;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('開発者モードが有効になりました')),
+      );
+    } else {
+      // 2秒以内に次のタップがないとカウントをリセット
+      _developerModeTapTimer = Timer(Duration(seconds: 2), () {
+        if (mounted) {
+          setState(() {
+            _developerModeTapCount = 0;
+          });
+        }
+      });
+    }
+  }
+
   @override
   void dispose() {
     _timeUpdateTimer?.cancel();
+    _developerModeTapTimer?.cancel();
     _webPlayer.dispose();
     super.dispose();
   }
@@ -549,16 +577,20 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Uta Picker'),
+        title: GestureDetector(
+          onTap: _handleTitleTap,
+          child: Text('Uta Picker'),
+        ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.file_upload),
-            onPressed: () async {
-              await Navigator.pushNamed(context, '/playlist-import');
-              await _loadPlaylist();
-            },
-            tooltip: 'JSONからプレイリストを作成',
-          ),
+          if (_isDeveloperModeEnabled)
+            IconButton(
+              icon: Icon(Icons.file_upload),
+              onPressed: () async {
+                await Navigator.pushNamed(context, '/playlist-import');
+                await _loadPlaylist();
+              },
+              tooltip: 'JSONからプレイリストを作成',
+            ),
         ],
       ),
       body: Row(children: [left, Expanded(child: right)]),
