@@ -112,6 +112,7 @@ app.*.symbols
 
 # API Keys
 script/api_key.txt
+script/videos.json
 
 # Exceptions to above rules.
 !**/ios/**/default.mode1v3

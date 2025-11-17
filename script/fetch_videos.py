@@ -3,14 +3,12 @@ import sys
 import requests
 import json
 
-def fetch_videos(api_key, channel_id, max_results=50):
-    url = "https://www.googleapis.com/youtube/v3/search"
+def fetch_videos(api_key, playlist_id, max_results=50):
+    url = "https://www.googleapis.com/youtube/v3/playlistItems"
     params = {
         'part': 'snippet',
-        'channelId': channel_id,
+        'playlistId': playlist_id,
         'maxResults': max_results,
-        'order': 'date',
-        'type': 'video',
         'key': api_key
     }
     r = requests.get(url, params=params)
@@ -19,7 +17,7 @@ def fetch_videos(api_key, channel_id, max_results=50):
     videos = []
     for it in items:
         videos.append({
-            'videoId': it['id']['videoId'],
+            'videoId': it['snippet']['resourceId']['videoId'],
             'title': it['snippet']['title'],
             'publishedAt': it['snippet']['publishedAt']
         })
@@ -27,12 +25,12 @@ def fetch_videos(api_key, channel_id, max_results=50):
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: python fetch_videos.py YOUR_API_KEY CHANNEL_ID")
-        print("Example CHANNEL_ID for @xxxxxxx: you can get channelId by visiting the channel and checking source or using the API.")
+        print("Usage: python fetch_videos.py YOUR_API_KEY PLAYLIST_ID")
+        print("Example PLAYLIST_ID: you can get playlistId from the playlist URL (e.g., PLxxxxxxx in youtube.com/playlist?list=PLxxxxxxx).")
         return
     api_key = sys.argv[1]
-    channel_id = sys.argv[2]
-    videos = fetch_videos(api_key, channel_id)
+    playlist_id = sys.argv[2]
+    videos = fetch_videos(api_key, playlist_id)
     with open('videos.json', 'w', encoding='utf-8') as f:
         json.dump(videos, f, ensure_ascii=False, indent=2)
     print(f"Saved {len(videos)} videos -> videos.json")
