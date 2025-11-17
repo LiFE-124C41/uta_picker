@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import '../../../platform/stubs/io_stub.dart' if (dart.library.io) 'dart:io' as io_platform;
+import '../../../platform/stubs/io_stub.dart' if (dart.library.io) 'dart:io'
+    as io_platform;
 import 'dart:html' as html show Blob, Url, AnchorElement;
 
 import '../../../domain/entities/playlist_item.dart';
@@ -13,7 +14,7 @@ import '../../../core/utils/csv_export.dart';
 
 class PlaylistManagementPage extends StatefulWidget {
   final PlaylistRepository playlistRepository;
-  
+
   const PlaylistManagementPage({
     Key? key,
     required this.playlistRepository,
@@ -30,6 +31,30 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
   void initState() {
     super.initState();
     _loadPlaylist();
+  }
+
+  /// '00:00'形式（分:秒）の文字列を秒数に変換
+  /// 例: "01:30" -> 90, "00:30" -> 30
+  int? _parseTimeString(String timeStr) {
+    final parts = timeStr.split(':');
+    if (parts.length != 2) return null;
+
+    final minutes = int.tryParse(parts[0]);
+    final seconds = int.tryParse(parts[1]);
+
+    if (minutes == null || seconds == null) return null;
+    if (seconds < 0 || seconds >= 60) return null;
+    if (minutes < 0) return null;
+
+    return minutes * 60 + seconds;
+  }
+
+  /// 秒数を'00:00'形式（分:秒）の文字列に変換
+  /// 例: 90 -> "01:30", 30 -> "00:30"
+  String _formatTimeString(int seconds) {
+    final minutes = seconds ~/ 60;
+    final secs = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
 
   Future<void> _loadPlaylist() async {
@@ -65,19 +90,17 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
               TextField(
                 controller: startSecController,
                 decoration: InputDecoration(
-                  labelText: '開始時刻（秒）',
-                  hintText: '例: 30',
+                  labelText: '開始時刻（分:秒）',
+                  hintText: '例: 00:30',
                 ),
-                keyboardType: TextInputType.number,
               ),
               SizedBox(height: 8),
               TextField(
                 controller: endSecController,
                 decoration: InputDecoration(
-                  labelText: '終了時刻（秒）',
-                  hintText: '例: 90',
+                  labelText: '終了時刻（分:秒）',
+                  hintText: '例: 01:30',
                 ),
-                keyboardType: TextInputType.number,
               ),
               SizedBox(height: 8),
               TextField(
@@ -116,12 +139,12 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
         return;
       }
 
-      final startSec = int.tryParse(startSecStr);
-      final endSec = int.tryParse(endSecStr);
+      final startSec = _parseTimeString(startSecStr);
+      final endSec = _parseTimeString(endSecStr);
 
       if (startSec == null || endSec == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('開始時刻と終了時刻は数値で入力してください')),
+          SnackBar(content: Text('開始時刻と終了時刻は「分:秒」形式（例: 00:30）で入力してください')),
         );
         return;
       }
@@ -139,7 +162,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
         endSec: endSec,
         title: title.isEmpty ? null : title,
       );
-      
+
       await widget.playlistRepository.addPlaylistItem(item);
       await _loadPlaylist();
     }
@@ -269,12 +292,13 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                       return ListTile(
                         title: Text(item.title ?? '動画 ${item.videoId}'),
                         subtitle: Text(
-                          '${item.videoId} @ ${item.startSec}s - ${item.endSec}s',
+                          '${item.videoId} @ ${_formatTimeString(item.startSec)} - ${_formatTimeString(item.endSec)}',
                         ),
                         trailing: IconButton(
                           icon: Icon(Icons.delete_outline),
                           onPressed: () async {
-                            await widget.playlistRepository.removePlaylistItem(idx);
+                            await widget.playlistRepository
+                                .removePlaylistItem(idx);
                             await _loadPlaylist();
                           },
                           tooltip: '削除',
@@ -288,4 +312,3 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
     );
   }
 }
-
