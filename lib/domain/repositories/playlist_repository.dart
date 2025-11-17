@@ -5,7 +5,7 @@ abstract class PlaylistRepository {
   Future<List<PlaylistItem>> getPlaylist();
   Future<void> savePlaylist(List<PlaylistItem> playlist);
   Future<void> addPlaylistItem(PlaylistItem item);
+  Future<void> updatePlaylistItem(int index, PlaylistItem item);
   Future<void> removePlaylistItem(int index);
   Future<void> clearPlaylist();
 }
-

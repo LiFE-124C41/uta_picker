@@ -65,15 +65,40 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
   }
 
   Future<void> _showAddPlaylistItemDialog() async {
-    final videoIdController = TextEditingController();
-    final startSecController = TextEditingController();
-    final endSecController = TextEditingController();
-    final titleController = TextEditingController();
+    await _showPlaylistItemDialog();
+  }
 
+  Future<void> _showEditPlaylistItemDialog(int index) async {
+    final item = playlist[index];
+    await _showPlaylistItemDialog(
+      index: index,
+      initialVideoId: item.videoId,
+      initialStartSec: item.startSec,
+      initialEndSec: item.endSec,
+      initialTitle: item.title,
+    );
+  }
+
+  Future<void> _showPlaylistItemDialog({
+    int? index,
+    String? initialVideoId,
+    int? initialStartSec,
+    int? initialEndSec,
+    String? initialTitle,
+  }) async {
+    final videoIdController = TextEditingController(text: initialVideoId ?? '');
+    final startSecController = TextEditingController(
+        text:
+            initialStartSec != null ? _formatTimeString(initialStartSec) : '');
+    final endSecController = TextEditingController(
+        text: initialEndSec != null ? _formatTimeString(initialEndSec) : '');
+    final titleController = TextEditingController(text: initialTitle ?? '');
+
+    final isEdit = index != null;
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('プレイリストに追加'),
+        title: Text(isEdit ? 'プレイリスト項目を編集' : 'プレイリストに追加'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -120,7 +145,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('追加'),
+            child: Text(isEdit ? '更新' : '追加'),
           ),
         ],
       ),
@@ -163,7 +188,11 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
         title: title.isEmpty ? null : title,
       );
 
-      await widget.playlistRepository.addPlaylistItem(item);
+      if (isEdit && index != null) {
+        await widget.playlistRepository.updatePlaylistItem(index, item);
+      } else {
+        await widget.playlistRepository.addPlaylistItem(item);
+      }
       await _loadPlaylist();
     }
   }
@@ -294,14 +323,24 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                         subtitle: Text(
                           '${item.videoId} @ ${_formatTimeString(item.startSec)} - ${_formatTimeString(item.endSec)}',
                         ),
-                        trailing: IconButton(
-                          icon: Icon(Icons.delete_outline),
-                          onPressed: () async {
-                            await widget.playlistRepository
-                                .removePlaylistItem(idx);
-                            await _loadPlaylist();
-                          },
-                          tooltip: '削除',
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.edit_outlined),
+                              onPressed: () => _showEditPlaylistItemDialog(idx),
+                              tooltip: '編集',
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.delete_outline),
+                              onPressed: () async {
+                                await widget.playlistRepository
+                                    .removePlaylistItem(idx);
+                                await _loadPlaylist();
+                              },
+                              tooltip: '削除',
+                            ),
+                          ],
                         ),
                       );
                     },
