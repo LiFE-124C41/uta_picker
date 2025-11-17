@@ -370,10 +370,19 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                 ? Center(
                     child: Text('プレイリストが空です\n「+」ボタンで追加してください'),
                   )
-                : ListView.builder(
-                    itemCount: playlist.length,
-                    itemBuilder: (context, idx) {
-                      final item = playlist[idx];
+                : ReorderableListView(
+                    onReorder: (oldIndex, newIndex) async {
+                      if (oldIndex < newIndex) {
+                        newIndex -= 1;
+                      }
+                      final item = playlist.removeAt(oldIndex);
+                      playlist.insert(newIndex, item);
+                      await widget.playlistRepository.savePlaylist(playlist);
+                      setState(() {});
+                    },
+                    children: playlist.asMap().entries.map((entry) {
+                      final idx = entry.key;
+                      final item = entry.value;
                       final displayTitle = item.songTitle ??
                           item.videoTitle ??
                           '動画 ${item.videoId}';
@@ -385,6 +394,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                       subtitleParts.add(
                           '${item.videoId} @ ${_formatTimeString(item.startSec)} - ${_formatTimeString(item.endSec)}');
                       return ListTile(
+                        key: ObjectKey(item),
                         title: Text(displayTitle),
                         subtitle: Text(subtitleParts.join('\n')),
                         trailing: Row(
@@ -407,7 +417,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                           ],
                         ),
                       );
-                    },
+                    }).toList(),
                   ),
           ),
         ],
