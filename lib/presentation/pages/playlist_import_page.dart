@@ -105,7 +105,8 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
                           subtitle: Text('ID: ${video.videoId}'),
                           trailing: IconButton(
                             icon: Icon(Icons.add_circle_outline),
-                            onPressed: () => _showCreatePlaylistItemDialog(video),
+                            onPressed: () =>
+                                _showCreatePlaylistItemDialog(video),
                             tooltip: 'プレイリストに追加',
                           ),
                           onTap: () => _showCreatePlaylistItemDialog(video),
@@ -178,20 +179,36 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
     });
   }
 
-  /// '00:00'形式（分:秒）の文字列を秒数に変換
-  /// 例: "01:30" -> 90, "00:30" -> 30
+  /// '00:00'形式（分:秒）または'00:00:00'形式（時:分:秒）の文字列を秒数に変換
+  /// 例: "01:30" -> 90, "00:30" -> 30, "01:07:52" -> 4072
   int? _parseTimeString(String timeStr) {
     final parts = timeStr.split(':');
-    if (parts.length != 2) return null;
 
-    final minutes = int.tryParse(parts[0]);
-    final seconds = int.tryParse(parts[1]);
+    if (parts.length == 2) {
+      // 分:秒形式
+      final minutes = int.tryParse(parts[0]);
+      final seconds = int.tryParse(parts[1]);
 
-    if (minutes == null || seconds == null) return null;
-    if (seconds < 0 || seconds >= 60) return null;
-    if (minutes < 0) return null;
+      if (minutes == null || seconds == null) return null;
+      if (seconds < 0 || seconds >= 60) return null;
+      if (minutes < 0) return null;
 
-    return minutes * 60 + seconds;
+      return minutes * 60 + seconds;
+    } else if (parts.length == 3) {
+      // 時:分:秒形式
+      final hours = int.tryParse(parts[0]);
+      final minutes = int.tryParse(parts[1]);
+      final seconds = int.tryParse(parts[2]);
+
+      if (hours == null || minutes == null || seconds == null) return null;
+      if (seconds < 0 || seconds >= 60) return null;
+      if (minutes < 0 || minutes >= 60) return null;
+      if (hours < 0) return null;
+
+      return hours * 3600 + minutes * 60 + seconds;
+    }
+
+    return null;
   }
 
   /// 動画からプレイリストアイテムを作成するダイアログを表示
@@ -222,8 +239,8 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
               TextField(
                 controller: startSecController,
                 decoration: InputDecoration(
-                  labelText: '開始時刻（分:秒）',
-                  hintText: '例: 00:30',
+                  labelText: '開始時刻（分:秒 または 時:分:秒）',
+                  hintText: '例: 00:30 または 01:07:52',
                 ),
                 autofocus: true,
               ),
@@ -231,8 +248,8 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
               TextField(
                 controller: endSecController,
                 decoration: InputDecoration(
-                  labelText: '終了時刻（分:秒）',
-                  hintText: '例: 01:30',
+                  labelText: '終了時刻（分:秒 または 時:分:秒）',
+                  hintText: '例: 01:30 または 01:10:00',
                 ),
               ),
               SizedBox(height: 8),
@@ -287,7 +304,7 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text(
-                  '開始時刻と終了時刻は「分:秒」形式（例: 00:30）で入力してください')),
+                  '開始時刻と終了時刻は「分:秒」（例: 00:30）または「時:分:秒」（例: 01:07:52）形式で入力してください')),
         );
         return;
       }
@@ -314,4 +331,3 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
     }
   }
 }
-
