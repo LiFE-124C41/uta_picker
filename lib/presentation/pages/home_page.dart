@@ -1,10 +1,8 @@
 // lib/presentation/pages/home_page.dart
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import '../../../platform/stubs/io_stub.dart' if (dart.library.io) 'dart:io'
@@ -88,33 +86,6 @@ class _HomePageState extends State<HomePage> {
     final loadedPlaylist = await widget.playlistRepository.getPlaylist();
     setState(() {
       playlist = loadedPlaylist;
-    });
-  }
-
-  Future<void> importVideosJson() async {
-    final res = await FilePicker.platform
-        .pickFiles(type: FileType.any, allowMultiple: false);
-    if (res == null) return;
-
-    String jsonStr;
-    if (kIsWeb) {
-      final bytes = res.files.first.bytes;
-      if (bytes == null) return;
-      jsonStr = utf8.decode(bytes);
-    } else {
-      final file = io_platform.File(res.files.first.path!);
-      jsonStr = await file.readAsString();
-    }
-
-    final arr = jsonDecode(jsonStr) as List<dynamic>;
-    setState(() {
-      videos = arr
-          .map((e) => VideoItem.fromJson(e as Map<String, dynamic>))
-          .toList();
-      selectedIndex = videos.isNotEmpty ? 0 : null;
-      if (selectedIndex != null) {
-        loadSelectedVideoToWebview();
-      }
     });
   }
 
@@ -575,8 +546,11 @@ class _HomePageState extends State<HomePage> {
         actions: [
           IconButton(
             icon: Icon(Icons.file_upload),
-            onPressed: importVideosJson,
-            tooltip: '動画リストをインポート',
+            onPressed: () async {
+              await Navigator.pushNamed(context, '/playlist-import');
+              await _loadPlaylist();
+            },
+            tooltip: 'JSONからプレイリストを作成',
           ),
           IconButton(
             icon: Icon(Icons.file_download),

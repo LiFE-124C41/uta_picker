@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'pages/home_page.dart';
 import 'pages/playlist_management_page.dart';
+import 'pages/playlist_import_page.dart';
 import '../../domain/repositories/track_repository.dart';
 import '../../domain/repositories/playlist_repository.dart';
 
@@ -26,6 +27,9 @@ class MyApp extends StatelessWidget {
       ),
       routes: {
         '/playlist-management': (context) => PlaylistManagementPage(
+          playlistRepository: playlistRepository,
+        ),
+        '/playlist-import': (context) => PlaylistImportPage(
           playlistRepository: playlistRepository,
         ),
       },
