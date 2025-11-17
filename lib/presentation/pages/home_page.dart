@@ -218,19 +218,26 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> exportCsv() async {
+    if (playlist.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('プレイリストが空です')),
+      );
+      return;
+    }
+
     final sb = StringBuffer();
-    sb.writeln('song_title,video_title,video_id,start_sec,end_sec,link');
-    for (var t in tracks.reversed) {
-      final link = 'https://youtu.be/${t.videoId}?t=${t.startSec}';
+    sb.writeln('video_title,song_title,video_id,start_sec,end_sec,link');
+    for (var item in playlist) {
+      final link = 'https://youtu.be/${item.videoId}?t=${item.startSec}';
       sb.writeln(
-          '${CsvExport.escape(t.songTitle)},${CsvExport.escape(t.videoTitle)},${t.videoId},${t.startSec},${t.endSec ?? ''},$link');
+          '${CsvExport.escape(item.videoTitle ?? '')},${CsvExport.escape(item.songTitle ?? '')},${item.videoId},${item.startSec},${item.endSec},$link');
     }
 
     if (kIsWeb) {
       final blob = html.Blob([sb.toString()], 'text/csv');
       final url = html.Url.createObjectUrlFromBlob(blob);
       html.AnchorElement(href: url)
-        ..setAttribute('download', 'song_picker_export.csv')
+        ..setAttribute('download', 'playlist_export.csv')
         ..click();
       html.Url.revokeObjectUrl(url);
       ScaffoldMessenger.of(context)
@@ -238,7 +245,7 @@ class _HomePageState extends State<HomePage> {
     } else {
       final dir = await getApplicationSupportDirectory();
       final out = io_platform.File(
-          '${dir.path}${io_platform.Platform.pathSeparator}song_picker_export.csv');
+          '${dir.path}${io_platform.Platform.pathSeparator}playlist_export.csv');
       await out.writeAsString(sb.toString());
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Exported to ${out.path}')));

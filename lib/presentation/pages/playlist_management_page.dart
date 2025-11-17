@@ -11,6 +11,7 @@ import 'dart:html' as html show Blob, Url, AnchorElement;
 import '../../../domain/entities/playlist_item.dart';
 import '../../../domain/repositories/playlist_repository.dart';
 import '../../../core/utils/csv_export.dart';
+import '../../../core/utils/csv_import.dart';
 
 class PlaylistManagementPage extends StatefulWidget {
   final PlaylistRepository playlistRepository;
@@ -212,34 +213,74 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
     }
   }
 
-  Future<void> _importPlaylistJson() async {
+  Future<void> _importPlaylistCsv() async {
     final res = await FilePicker.platform
         .pickFiles(type: FileType.any, allowMultiple: false);
     if (res == null) return;
 
-    String jsonStr;
+    String csvStr;
     if (kIsWeb) {
       final bytes = res.files.first.bytes;
       if (bytes == null) return;
-      jsonStr = utf8.decode(bytes);
+      csvStr = utf8.decode(bytes);
     } else {
       final file = io_platform.File(res.files.first.path!);
-      jsonStr = await file.readAsString();
+      csvStr = await file.readAsString();
     }
 
     try {
-      final arr = jsonDecode(jsonStr) as List<dynamic>;
-      final importedPlaylist = arr
-          .map((e) => PlaylistItem.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final rows = CsvImport.parseCsv(csvStr);
+      final importedPlaylist = <PlaylistItem>[];
+
+      for (final row in rows) {
+        final videoId = row['video_id'] ?? '';
+        final startSecStr = row['start_sec'] ?? '';
+        final endSecStr = row['end_sec'] ?? '';
+        final videoTitle =
+            row['video_title']?.isEmpty == true ? null : row['video_title'];
+        final songTitle =
+            row['song_title']?.isEmpty == true ? null : row['song_title'];
+
+        if (videoId.isEmpty || startSecStr.isEmpty || endSecStr.isEmpty) {
+          continue; // 必須フィールドが空の行はスキップ
+        }
+
+        final startSec = int.tryParse(startSecStr);
+        final endSec = int.tryParse(endSecStr);
+
+        if (startSec == null || endSec == null) {
+          continue; // 数値に変換できない行はスキップ
+        }
+
+        if (startSec >= endSec) {
+          continue; // 開始時刻が終了時刻以上の行はスキップ
+        }
+
+        importedPlaylist.add(PlaylistItem(
+          videoId: videoId,
+          startSec: startSec,
+          endSec: endSec,
+          videoTitle: videoTitle,
+          songTitle: songTitle,
+        ));
+      }
+
+      if (importedPlaylist.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('有効なプレイリスト項目が見つかりませんでした')),
+        );
+        return;
+      }
+
       await widget.playlistRepository.savePlaylist(importedPlaylist);
       await _loadPlaylist();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('プレイリストをインポートしました')),
+        SnackBar(
+            content: Text('${importedPlaylist.length}件のプレイリスト項目をインポートしました')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('JSONファイルの読み込みに失敗しました: $e')),
+        SnackBar(content: Text('CSVファイルの読み込みに失敗しました: $e')),
       );
     }
   }
@@ -302,8 +343,8 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                     ),
                     IconButton(
                       icon: Icon(Icons.file_upload),
-                      onPressed: _importPlaylistJson,
-                      tooltip: 'JSON取り込み',
+                      onPressed: _importPlaylistCsv,
+                      tooltip: 'CSV取り込み',
                     ),
                     IconButton(
                       icon: Icon(Icons.file_download),
