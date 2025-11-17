@@ -406,6 +406,67 @@ class _HomePageState extends State<HomePage> {
 
     final right = Column(
       children: [
+        // 動画リスト表示セクション
+        if (videos.isNotEmpty)
+          Container(
+            height: 200,
+            color: Colors.grey[100],
+            child: Column(
+              children: [
+                Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '動画リスト (${videos.length})',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: videos.length,
+                    itemBuilder: (context, idx) {
+                      final video = videos[idx];
+                      final isSelected = selectedIndex == idx;
+                      return ListTile(
+                        title: Text(
+                          video.title,
+                          style: TextStyle(
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          'ID: ${video.videoId}',
+                          style: TextStyle(fontSize: 10),
+                        ),
+                        selected: isSelected,
+                        trailing: IconButton(
+                          icon: Icon(Icons.playlist_add, size: 20),
+                          onPressed: () => _showCreatePlaylistItemDialog(video),
+                          tooltip: 'プレイリストに追加',
+                        ),
+                        onTap: () {
+                          setState(() {
+                            selectedIndex = idx;
+                          });
+                          loadSelectedVideoToWebview();
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
         Expanded(
           child: Container(
             color: Colors.black12,
@@ -562,5 +623,129 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
+  }
+
+  /// '00:00'形式（分:秒）の文字列を秒数に変換
+  /// 例: "01:30" -> 90, "00:30" -> 30
+  int? _parseTimeString(String timeStr) {
+    final parts = timeStr.split(':');
+    if (parts.length != 2) return null;
+
+    final minutes = int.tryParse(parts[0]);
+    final seconds = int.tryParse(parts[1]);
+
+    if (minutes == null || seconds == null) return null;
+    if (seconds < 0 || seconds >= 60) return null;
+    if (minutes < 0) return null;
+
+    return minutes * 60 + seconds;
+  }
+
+  /// 動画からプレイリストアイテムを作成するダイアログを表示
+  Future<void> _showCreatePlaylistItemDialog(VideoItem video) async {
+    final startSecController = TextEditingController();
+    final endSecController = TextEditingController();
+    final titleController = TextEditingController(text: video.title);
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('プレイリストに追加'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '動画: ${video.title}',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+              SizedBox(height: 8),
+              Text(
+                '動画ID: ${video.videoId}',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+              SizedBox(height: 16),
+              TextField(
+                controller: startSecController,
+                decoration: InputDecoration(
+                  labelText: '開始時刻（分:秒）',
+                  hintText: '例: 00:30',
+                ),
+                autofocus: true,
+              ),
+              SizedBox(height: 8),
+              TextField(
+                controller: endSecController,
+                decoration: InputDecoration(
+                  labelText: '終了時刻（分:秒）',
+                  hintText: '例: 01:30',
+                ),
+              ),
+              SizedBox(height: 8),
+              TextField(
+                controller: titleController,
+                decoration: InputDecoration(
+                  labelText: 'タイトル（オプション）',
+                  hintText: '例: 曲名',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('追加'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      final startSecStr = startSecController.text.trim();
+      final endSecStr = endSecController.text.trim();
+      final title = titleController.text.trim();
+
+      if (startSecStr.isEmpty || endSecStr.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('開始時刻と終了時刻は必須です')),
+        );
+        return;
+      }
+
+      final startSec = _parseTimeString(startSecStr);
+      final endSec = _parseTimeString(endSecStr);
+
+      if (startSec == null || endSec == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('開始時刻と終了時刻は「分:秒」形式（例: 00:30）で入力してください')),
+        );
+        return;
+      }
+
+      if (startSec >= endSec) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('終了時刻は開始時刻より大きくしてください')),
+        );
+        return;
+      }
+
+      final item = PlaylistItem(
+        videoId: video.videoId,
+        startSec: startSec,
+        endSec: endSec,
+        title: title.isEmpty ? null : title,
+      );
+
+      await widget.playlistRepository.addPlaylistItem(item);
+      await _loadPlaylist();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('プレイリストに追加しました')),
+      );
+    }
   }
 }
