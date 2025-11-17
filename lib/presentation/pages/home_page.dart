@@ -4,15 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:intl/intl.dart';
 import '../../../platform/stubs/io_stub.dart' if (dart.library.io) 'dart:io'
     as io_platform;
 import 'dart:html' as html show Blob, Url, AnchorElement;
 
 import '../../../domain/entities/video_item.dart';
-import '../../../domain/entities/track.dart';
 import '../../../domain/entities/playlist_item.dart';
-import '../../../domain/repositories/track_repository.dart';
 import '../../../domain/repositories/playlist_repository.dart';
 import '../../../data/repositories/playlist_repository_impl.dart';
 import '../../../platform/youtube_player/web_player.dart';
@@ -20,12 +17,10 @@ import '../../../platform/youtube_player/desktop_player.dart';
 import '../../../core/utils/csv_export.dart';
 
 class HomePage extends StatefulWidget {
-  final TrackRepository trackRepository;
   final PlaylistRepository playlistRepository;
 
   const HomePage({
     Key? key,
-    required this.trackRepository,
     required this.playlistRepository,
   }) : super(key: key);
 
@@ -37,7 +32,6 @@ class _HomePageState extends State<HomePage> {
   List<VideoItem> videos = [];
   int? selectedIndex;
   double currentSec = 0;
-  List<Track> tracks = [];
   String? _currentVideoId;
   List<PlaylistItem> playlist = [];
   int? currentPlaylistIndex;
@@ -61,8 +55,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _initialize() async {
-    await widget.trackRepository.initialize();
-
     // Initialize playlist repository if it has initialize method
     if (widget.playlistRepository is PlaylistRepositoryImpl) {
       await (widget.playlistRepository as PlaylistRepositoryImpl).initialize();
@@ -74,15 +66,7 @@ class _HomePageState extends State<HomePage> {
       _webPlayer.initialize();
     }
 
-    await _loadTracks();
     await _loadPlaylist();
-  }
-
-  Future<void> _loadTracks() async {
-    final loadedTracks = await widget.trackRepository.getAllTracks();
-    setState(() {
-      tracks = loadedTracks;
-    });
   }
 
   Future<void> _loadPlaylist() async {
@@ -184,40 +168,6 @@ class _HomePageState extends State<HomePage> {
 
     final item = playlist[nextIndex];
     _playTimeRange(item.videoId, item.startSec, item.endSec);
-  }
-
-  Future<void> saveStart(String songTitle) async {
-    if (selectedIndex == null) return;
-    final v = videos[selectedIndex!];
-    final now = DateFormat('yyyy-MM-ddTHH:mm:ss').format(DateTime.now());
-    final track = Track(
-      videoId: v.videoId,
-      videoTitle: v.title,
-      startSec: currentSec.round(),
-      endSec: null,
-      songTitle: songTitle,
-      recordedAt: now,
-      note: null,
-    );
-
-    await widget.trackRepository.saveTrack(track);
-    await _loadTracks();
-  }
-
-  Future<void> saveEndForLatestOpenTrack() async {
-    if (selectedIndex == null) return;
-    final v = videos[selectedIndex!];
-
-    final allTracks = await widget.trackRepository.getAllTracks();
-    for (var i = allTracks.length - 1; i >= 0; i--) {
-      final t = allTracks[i];
-      if (t.videoId == v.videoId && t.endSec == null) {
-        await widget.trackRepository
-            .updateTrackEndSec(t.id!, currentSec.round());
-        await _loadTracks();
-        return;
-      }
-    }
   }
 
   Future<void> exportCsv() async {
@@ -490,88 +440,6 @@ class _HomePageState extends State<HomePage> {
                 : _desktopPlayer.buildWebView(),
           ),
         ),
-        Container(
-          padding: EdgeInsets.all(8),
-          color: Colors.white,
-          child: Column(
-            children: [
-              Row(children: [
-                Text('Current: ${currentSec.toStringAsFixed(1)}s'),
-                SizedBox(width: 12),
-                ElevatedButton(
-                    onPressed: () async {
-                      final ctrl = TextEditingController();
-                      final secStr = await showDialog<String>(
-                        context: context,
-                        builder: (c) => AlertDialog(
-                          title: Text('Seek to (seconds)'),
-                          content: TextField(controller: ctrl),
-                          actions: [
-                            TextButton(
-                                onPressed: () => Navigator.pop(c, null),
-                                child: Text('Cancel')),
-                            TextButton(
-                                onPressed: () => Navigator.pop(c, ctrl.text),
-                                child: Text('OK')),
-                          ],
-                        ),
-                      );
-                      if (secStr != null && secStr.trim().isNotEmpty) {
-                        final sec = double.tryParse(secStr.trim());
-                        if (sec != null) {
-                          if (kIsWeb) {
-                            if (selectedIndex != null) {
-                              final v = videos[selectedIndex!];
-                              _currentVideoId = v.videoId;
-                              setState(() {});
-                            }
-                          } else {
-                            await _desktopPlayer.seekTo(sec);
-                          }
-                        }
-                      }
-                    },
-                    child: Text('Seek (manually)')),
-                SizedBox(width: 12),
-                ElevatedButton(
-                    onPressed: () {
-                      if (selectedIndex != null) {
-                        final v = videos[selectedIndex!];
-                        final link =
-                            'https://youtu.be/${v.videoId}?t=${currentSec.round()}';
-                        Clipboard.setData(ClipboardData(text: link));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Copied $link')));
-                      }
-                    },
-                    child: Text('Copy link')),
-              ]),
-              SizedBox(height: 8),
-              Row(children: [
-                ElevatedButton(
-                    onPressed: () async {
-                      final title = await _askSongTitle();
-                      if (title != null && title.trim().isNotEmpty) {
-                        await saveStart(title.trim());
-                      }
-                    },
-                    child: Text('Start')),
-                SizedBox(width: 8),
-                ElevatedButton(
-                    onPressed: () async {
-                      await saveEndForLatestOpenTrack();
-                    },
-                    child: Text('End')),
-                SizedBox(width: 8),
-                ElevatedButton(
-                    onPressed: () async {
-                      await _loadTracks();
-                    },
-                    child: Text('Refresh')),
-              ])
-            ],
-          ),
-        )
       ],
     );
 
@@ -610,28 +478,6 @@ class _HomePageState extends State<HomePage> {
     return _webPlayer.buildIframeWidget(_currentVideoId!);
   }
 
-  Future<String?> _askSongTitle() {
-    final ctrl = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (c) => AlertDialog(
-        title: Text('Song title'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          decoration: InputDecoration(hintText: '曲名を入力'),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(c, null), child: Text('キャンセル')),
-          TextButton(
-              onPressed: () => Navigator.pop(c, ctrl.text), child: Text('保存')),
-        ],
-      ),
-    );
-  }
-
   /// '00:00'形式（分:秒）の文字列を秒数に変換
   /// 例: "01:30" -> 90, "00:30" -> 30
   int? _parseTimeString(String timeStr) {
@@ -655,115 +501,134 @@ class _HomePageState extends State<HomePage> {
     final videoTitleController = TextEditingController(text: video.title);
     final songTitleController = TextEditingController();
 
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('プレイリストに追加'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '動画: ${video.title}',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-              SizedBox(height: 8),
-              Text(
-                '動画ID: ${video.videoId}',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-              SizedBox(height: 16),
-              TextField(
-                controller: startSecController,
-                decoration: InputDecoration(
-                  labelText: '開始時刻（分:秒）',
-                  hintText: '例: 00:30',
+    if (kIsWeb) {
+      _webPlayer.disablePointerEvents();
+    }
+    try {
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('プレイリストに追加'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '動画: ${video.title}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
-                autofocus: true,
-              ),
-              SizedBox(height: 8),
-              TextField(
-                controller: endSecController,
-                decoration: InputDecoration(
-                  labelText: '終了時刻（分:秒）',
-                  hintText: '例: 01:30',
+                SizedBox(height: 8),
+                Text(
+                  '動画ID: ${video.videoId}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
-              ),
-              SizedBox(height: 8),
-              TextField(
-                controller: videoTitleController,
-                decoration: InputDecoration(
-                  labelText: '動画タイトル（オプション）',
-                  hintText: '例: YouTube動画のタイトル',
+                SizedBox(height: 16),
+                TextField(
+                  controller: startSecController,
+                  decoration: InputDecoration(
+                    labelText: '開始時刻（分:秒）',
+                    hintText: '例: 00:30',
+                  ),
+                  autofocus: true,
                 ),
-              ),
-              SizedBox(height: 8),
-              TextField(
-                controller: songTitleController,
-                decoration: InputDecoration(
-                  labelText: '楽曲タイトル（オプション）',
-                  hintText: '例: 曲名',
+                SizedBox(height: 8),
+                TextField(
+                  controller: endSecController,
+                  decoration: InputDecoration(
+                    labelText: '終了時刻（分:秒）',
+                    hintText: '例: 01:30',
+                  ),
                 ),
-              ),
-            ],
+                SizedBox(height: 8),
+                TextField(
+                  controller: videoTitleController,
+                  decoration: InputDecoration(
+                    labelText: '動画タイトル（オプション）',
+                    hintText: '例: YouTube動画のタイトル',
+                  ),
+                ),
+                SizedBox(height: 8),
+                TextField(
+                  controller: songTitleController,
+                  decoration: InputDecoration(
+                    labelText: '楽曲タイトル（オプション）',
+                    hintText: '例: 曲名',
+                  ),
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                if (kIsWeb) {
+                  _webPlayer.enablePointerEvents();
+                }
+                Navigator.pop(context, false);
+              },
+              child: Text('キャンセル'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (kIsWeb) {
+                  _webPlayer.enablePointerEvents();
+                }
+                Navigator.pop(context, true);
+              },
+              child: Text('追加'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text('追加'),
-          ),
-        ],
-      ),
-    );
-
-    if (result == true) {
-      final startSecStr = startSecController.text.trim();
-      final endSecStr = endSecController.text.trim();
-      final videoTitle = videoTitleController.text.trim();
-      final songTitle = songTitleController.text.trim();
-
-      if (startSecStr.isEmpty || endSecStr.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('開始時刻と終了時刻は必須です')),
-        );
-        return;
-      }
-
-      final startSec = _parseTimeString(startSecStr);
-      final endSec = _parseTimeString(endSecStr);
-
-      if (startSec == null || endSec == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('開始時刻と終了時刻は「分:秒」形式（例: 00:30）で入力してください')),
-        );
-        return;
-      }
-
-      if (startSec >= endSec) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('終了時刻は開始時刻より大きくしてください')),
-        );
-        return;
-      }
-
-      final item = PlaylistItem(
-        videoId: video.videoId,
-        startSec: startSec,
-        endSec: endSec,
-        videoTitle: videoTitle.isEmpty ? null : videoTitle,
-        songTitle: songTitle.isEmpty ? null : songTitle,
       );
 
-      await widget.playlistRepository.addPlaylistItem(item);
-      await _loadPlaylist();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('プレイリストに追加しました')),
-      );
+      if (result == true) {
+        final startSecStr = startSecController.text.trim();
+        final endSecStr = endSecController.text.trim();
+        final videoTitle = videoTitleController.text.trim();
+        final songTitle = songTitleController.text.trim();
+
+        if (startSecStr.isEmpty || endSecStr.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('開始時刻と終了時刻は必須です')),
+          );
+          return;
+        }
+
+        final startSec = _parseTimeString(startSecStr);
+        final endSec = _parseTimeString(endSecStr);
+
+        if (startSec == null || endSec == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('開始時刻と終了時刻は「分:秒」形式（例: 00:30）で入力してください')),
+          );
+          return;
+        }
+
+        if (startSec >= endSec) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('終了時刻は開始時刻より大きくしてください')),
+          );
+          return;
+        }
+
+        final item = PlaylistItem(
+          videoId: video.videoId,
+          startSec: startSec,
+          endSec: endSec,
+          videoTitle: videoTitle.isEmpty ? null : videoTitle,
+          songTitle: songTitle.isEmpty ? null : songTitle,
+        );
+
+        await widget.playlistRepository.addPlaylistItem(item);
+        await _loadPlaylist();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('プレイリストに追加しました')),
+        );
+      }
+    } finally {
+      if (kIsWeb) {
+        _webPlayer.enablePointerEvents();
+      }
     }
   }
 }

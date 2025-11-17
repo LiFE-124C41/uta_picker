@@ -412,6 +412,50 @@ class WebPlayer {
 
     return HtmlElementView(viewType: viewType);
   }
+
+  /// iframeのポインターイベントを無効化（AlertDialog表示時などに使用）
+  void disablePointerEvents() {
+    if (!kIsWeb) return;
+    try {
+      // すべてのYouTube iframeを検索
+      final iframes = html.document.querySelectorAll('iframe[src*="youtube.com"]');
+      for (var iframe in iframes) {
+        (iframe as html.IFrameElement).style.pointerEvents = 'none';
+      }
+      // YouTube Player APIで作成されたプレイヤーのiframeも無効化
+      final displayDiv = html.document.getElementById('youtube-player-display-div');
+      if (displayDiv != null) {
+        final playerIframes = displayDiv.querySelectorAll('iframe');
+        for (var iframe in playerIframes) {
+          (iframe as html.IFrameElement).style.pointerEvents = 'none';
+        }
+      }
+    } catch (e) {
+      print('Error disabling pointer events: $e');
+    }
+  }
+
+  /// iframeのポインターイベントを有効化
+  void enablePointerEvents() {
+    if (!kIsWeb) return;
+    try {
+      // すべてのYouTube iframeを検索
+      final iframes = html.document.querySelectorAll('iframe[src*="youtube.com"]');
+      for (var iframe in iframes) {
+        (iframe as html.IFrameElement).style.pointerEvents = 'auto';
+      }
+      // YouTube Player APIで作成されたプレイヤーのiframeも有効化
+      final displayDiv = html.document.getElementById('youtube-player-display-div');
+      if (displayDiv != null) {
+        final playerIframes = displayDiv.querySelectorAll('iframe');
+        for (var iframe in playerIframes) {
+          (iframe as html.IFrameElement).style.pointerEvents = 'auto';
+        }
+      }
+    } catch (e) {
+      print('Error enabling pointer events: $e');
+    }
+  }
 }
 
 class _PendingPlayerCreation {
