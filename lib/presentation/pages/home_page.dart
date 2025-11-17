@@ -559,19 +559,6 @@ class _HomePageState extends State<HomePage> {
             },
             tooltip: 'JSONからプレイリストを作成',
           ),
-          IconButton(
-            icon: Icon(Icons.file_download),
-            onPressed: exportCsv,
-            tooltip: 'CSVエクスポート',
-          ),
-          IconButton(
-            icon: Icon(Icons.settings),
-            onPressed: () async {
-              await Navigator.pushNamed(context, '/playlist-management');
-              await _loadPlaylist();
-            },
-            tooltip: 'プレイリスト管理',
-          ),
         ],
       ),
       body: Row(children: [left, Expanded(child: right)]),
