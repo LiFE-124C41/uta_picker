@@ -75,7 +75,8 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
       initialVideoId: item.videoId,
       initialStartSec: item.startSec,
       initialEndSec: item.endSec,
-      initialTitle: item.title,
+      initialVideoTitle: item.videoTitle,
+      initialSongTitle: item.songTitle,
     );
   }
 
@@ -84,7 +85,8 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
     String? initialVideoId,
     int? initialStartSec,
     int? initialEndSec,
-    String? initialTitle,
+    String? initialVideoTitle,
+    String? initialSongTitle,
   }) async {
     final videoIdController = TextEditingController(text: initialVideoId ?? '');
     final startSecController = TextEditingController(
@@ -92,7 +94,10 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
             initialStartSec != null ? _formatTimeString(initialStartSec) : '');
     final endSecController = TextEditingController(
         text: initialEndSec != null ? _formatTimeString(initialEndSec) : '');
-    final titleController = TextEditingController(text: initialTitle ?? '');
+    final videoTitleController =
+        TextEditingController(text: initialVideoTitle ?? '');
+    final songTitleController =
+        TextEditingController(text: initialSongTitle ?? '');
 
     final isEdit = index != null;
     final result = await showDialog<bool>(
@@ -129,9 +134,17 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
               ),
               SizedBox(height: 8),
               TextField(
-                controller: titleController,
+                controller: videoTitleController,
                 decoration: InputDecoration(
-                  labelText: 'タイトル（オプション）',
+                  labelText: '動画タイトル（オプション）',
+                  hintText: '例: YouTube動画のタイトル',
+                ),
+              ),
+              SizedBox(height: 8),
+              TextField(
+                controller: songTitleController,
+                decoration: InputDecoration(
+                  labelText: '楽曲タイトル（オプション）',
                   hintText: '例: 曲名',
                 ),
               ),
@@ -155,7 +168,8 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
       final videoId = videoIdController.text.trim();
       final startSecStr = startSecController.text.trim();
       final endSecStr = endSecController.text.trim();
-      final title = titleController.text.trim();
+      final videoTitle = videoTitleController.text.trim();
+      final songTitle = songTitleController.text.trim();
 
       if (videoId.isEmpty || startSecStr.isEmpty || endSecStr.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -185,10 +199,11 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
         videoId: videoId,
         startSec: startSec,
         endSec: endSec,
-        title: title.isEmpty ? null : title,
+        videoTitle: videoTitle.isEmpty ? null : videoTitle,
+        songTitle: songTitle.isEmpty ? null : songTitle,
       );
 
-      if (isEdit && index != null) {
+      if (isEdit) {
         await widget.playlistRepository.updatePlaylistItem(index, item);
       } else {
         await widget.playlistRepository.addPlaylistItem(item);
@@ -238,11 +253,11 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
     }
 
     final sb = StringBuffer();
-    sb.writeln('title,video_id,start_sec,end_sec,link');
+    sb.writeln('video_title,song_title,video_id,start_sec,end_sec,link');
     for (var item in playlist) {
       final link = 'https://youtu.be/${item.videoId}?t=${item.startSec}';
       sb.writeln(
-          '${CsvExport.escape(item.title ?? '')},${item.videoId},${item.startSec},${item.endSec},$link');
+          '${CsvExport.escape(item.videoTitle ?? '')},${CsvExport.escape(item.songTitle ?? '')},${item.videoId},${item.startSec},${item.endSec},$link');
     }
 
     if (kIsWeb) {
@@ -318,11 +333,19 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                     itemCount: playlist.length,
                     itemBuilder: (context, idx) {
                       final item = playlist[idx];
+                      final displayTitle = item.songTitle ??
+                          item.videoTitle ??
+                          '動画 ${item.videoId}';
+                      final subtitleParts = <String>[];
+                      if (item.videoTitle != null &&
+                          item.videoTitle != item.songTitle) {
+                        subtitleParts.add('動画: ${item.videoTitle}');
+                      }
+                      subtitleParts.add(
+                          '${item.videoId} @ ${_formatTimeString(item.startSec)} - ${_formatTimeString(item.endSec)}');
                       return ListTile(
-                        title: Text(item.title ?? '動画 ${item.videoId}'),
-                        subtitle: Text(
-                          '${item.videoId} @ ${_formatTimeString(item.startSec)} - ${_formatTimeString(item.endSec)}',
-                        ),
+                        title: Text(displayTitle),
+                        subtitle: Text(subtitleParts.join('\n')),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [

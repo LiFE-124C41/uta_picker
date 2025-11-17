@@ -341,18 +341,25 @@ class _HomePageState extends State<HomePage> {
                   final item = playlist[idx];
                   final isCurrent =
                       isPlayingPlaylist && currentPlaylistIndex == idx;
+                  final displayTitle =
+                      item.songTitle ?? item.videoTitle ?? '動画 ${item.videoId}';
+                  final subtitleParts = <String>[];
+                  if (item.videoTitle != null &&
+                      item.videoTitle != item.songTitle) {
+                    subtitleParts.add('動画: ${item.videoTitle}');
+                  }
+                  subtitleParts.add(
+                      '${item.videoId} @ ${item.startSec}s - ${item.endSec}s');
                   return ListTile(
                     title: Text(
-                      item.title ?? '動画 ${item.videoId}',
+                      displayTitle,
                       style: TextStyle(
                         fontWeight:
                             isCurrent ? FontWeight.bold : FontWeight.normal,
                         color: isCurrent ? Colors.blue : null,
                       ),
                     ),
-                    subtitle: Text(
-                      '${item.videoId} @ ${item.startSec}s - ${item.endSec}s',
-                    ),
+                    subtitle: Text(subtitleParts.join('\n')),
                     trailing: IconButton(
                       icon: Icon(Icons.play_arrow, size: 20),
                       onPressed: () {
@@ -645,7 +652,8 @@ class _HomePageState extends State<HomePage> {
   Future<void> _showCreatePlaylistItemDialog(VideoItem video) async {
     final startSecController = TextEditingController();
     final endSecController = TextEditingController();
-    final titleController = TextEditingController(text: video.title);
+    final videoTitleController = TextEditingController(text: video.title);
+    final songTitleController = TextEditingController();
 
     final result = await showDialog<bool>(
       context: context,
@@ -683,9 +691,17 @@ class _HomePageState extends State<HomePage> {
               ),
               SizedBox(height: 8),
               TextField(
-                controller: titleController,
+                controller: videoTitleController,
                 decoration: InputDecoration(
-                  labelText: 'タイトル（オプション）',
+                  labelText: '動画タイトル（オプション）',
+                  hintText: '例: YouTube動画のタイトル',
+                ),
+              ),
+              SizedBox(height: 8),
+              TextField(
+                controller: songTitleController,
+                decoration: InputDecoration(
+                  labelText: '楽曲タイトル（オプション）',
                   hintText: '例: 曲名',
                 ),
               ),
@@ -708,7 +724,8 @@ class _HomePageState extends State<HomePage> {
     if (result == true) {
       final startSecStr = startSecController.text.trim();
       final endSecStr = endSecController.text.trim();
-      final title = titleController.text.trim();
+      final videoTitle = videoTitleController.text.trim();
+      final songTitle = songTitleController.text.trim();
 
       if (startSecStr.isEmpty || endSecStr.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -738,7 +755,8 @@ class _HomePageState extends State<HomePage> {
         videoId: video.videoId,
         startSec: startSec,
         endSec: endSec,
-        title: title.isEmpty ? null : title,
+        videoTitle: videoTitle.isEmpty ? null : videoTitle,
+        songTitle: songTitle.isEmpty ? null : songTitle,
       );
 
       await widget.playlistRepository.addPlaylistItem(item);
