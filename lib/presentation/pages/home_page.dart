@@ -277,20 +277,43 @@ class _HomePageState extends State<HomePage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('プレイリスト', style: TextStyle(fontSize: 18)),
-                IconButton(
-                  icon: Icon(Icons.settings),
-                  onPressed: () async {
-                    await Navigator.pushNamed(context, '/playlist-management');
-                    await _loadPlaylist();
-                  },
-                  tooltip: 'プレイリスト管理',
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (playlist.isNotEmpty) ...[
+                      IconButton(
+                        icon: Icon(
+                          isPlayingPlaylist ? Icons.stop : Icons.play_arrow,
+                        ),
+                        onPressed:
+                            isPlayingPlaylist ? _stopPlaylist : _playPlaylist,
+                        tooltip: isPlayingPlaylist ? '停止' : '再生',
+                      ),
+                      if (isPlayingPlaylist && currentPlaylistIndex != null)
+                        Padding(
+                          padding: EdgeInsets.only(right: 8),
+                          child: Text(
+                            '${currentPlaylistIndex! + 1} / ${playlist.length}',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ),
+                    ],
+                    IconButton(
+                      icon: Icon(Icons.settings),
+                      onPressed: () async {
+                        await Navigator.pushNamed(
+                            context, '/playlist-management');
+                        await _loadPlaylist();
+                      },
+                      tooltip: 'プレイリスト管理',
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
           if (playlist.isNotEmpty)
-            Container(
-              height: 200,
+            Expanded(
               child: ListView.builder(
                 itemCount: playlist.length,
                 itemBuilder: (context, idx) {
@@ -343,25 +366,6 @@ class _HomePageState extends State<HomePage> {
             Padding(
               padding: EdgeInsets.all(8),
               child: Text('プレイリストが空です\n管理画面で追加してください'),
-            ),
-          if (playlist.isNotEmpty)
-            Padding(
-              padding: EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  ElevatedButton(
-                    onPressed:
-                        isPlayingPlaylist ? _stopPlaylist : _playPlaylist,
-                    child: Text(isPlayingPlaylist ? '停止' : '再生'),
-                  ),
-                  SizedBox(width: 8),
-                  if (isPlayingPlaylist && currentPlaylistIndex != null)
-                    Text(
-                      '${currentPlaylistIndex! + 1} / ${playlist.length}',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                ],
-              ),
             ),
         ],
       ),
