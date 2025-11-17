@@ -1,0 +1,566 @@
+// lib/presentation/pages/home_page.dart
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:intl/intl.dart';
+import '../../../platform/stubs/io_stub.dart' if (dart.library.io) 'dart:io'
+    as io_platform;
+import 'dart:html' as html show Blob, Url, AnchorElement;
+
+import '../../../domain/entities/video_item.dart';
+import '../../../domain/entities/track.dart';
+import '../../../domain/entities/playlist_item.dart';
+import '../../../domain/repositories/track_repository.dart';
+import '../../../domain/repositories/playlist_repository.dart';
+import '../../../data/repositories/playlist_repository_impl.dart';
+import '../../../platform/youtube_player/web_player.dart';
+import '../../../platform/youtube_player/desktop_player.dart';
+import '../../../core/utils/csv_export.dart';
+
+class HomePage extends StatefulWidget {
+  final TrackRepository trackRepository;
+  final PlaylistRepository playlistRepository;
+
+  const HomePage({
+    Key? key,
+    required this.trackRepository,
+    required this.playlistRepository,
+  }) : super(key: key);
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List<VideoItem> videos = [];
+  int? selectedIndex;
+  double currentSec = 0;
+  List<Track> tracks = [];
+  String? _currentVideoId;
+  List<PlaylistItem> playlist = [];
+  int? currentPlaylistIndex;
+  bool isPlayingPlaylist = false;
+  bool _isPlaying = false;
+
+  late WebPlayer _webPlayer;
+  late DesktopPlayer _desktopPlayer;
+  Timer? _timeUpdateTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _webPlayer = WebPlayer();
+    _desktopPlayer = DesktopPlayer();
+
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await widget.trackRepository.initialize();
+
+    // Initialize playlist repository if it has initialize method
+    if (widget.playlistRepository is PlaylistRepositoryImpl) {
+      await (widget.playlistRepository as PlaylistRepositoryImpl).initialize();
+    }
+
+    if (!kIsWeb) {
+      _desktopPlayer.initialize();
+    } else {
+      _webPlayer.initialize();
+    }
+
+    await _loadTracks();
+    await _loadPlaylist();
+  }
+
+  Future<void> _loadTracks() async {
+    final loadedTracks = await widget.trackRepository.getAllTracks();
+    setState(() {
+      tracks = loadedTracks;
+    });
+  }
+
+  Future<void> _loadPlaylist() async {
+    final loadedPlaylist = await widget.playlistRepository.getPlaylist();
+    setState(() {
+      playlist = loadedPlaylist;
+    });
+  }
+
+  Future<void> importVideosJson() async {
+    final res = await FilePicker.platform
+        .pickFiles(type: FileType.any, allowMultiple: false);
+    if (res == null) return;
+
+    String jsonStr;
+    if (kIsWeb) {
+      final bytes = res.files.first.bytes;
+      if (bytes == null) return;
+      jsonStr = utf8.decode(bytes);
+    } else {
+      final file = io_platform.File(res.files.first.path!);
+      jsonStr = await file.readAsString();
+    }
+
+    final arr = jsonDecode(jsonStr) as List<dynamic>;
+    setState(() {
+      videos = arr
+          .map((e) => VideoItem.fromJson(e as Map<String, dynamic>))
+          .toList();
+      selectedIndex = videos.isNotEmpty ? 0 : null;
+      if (selectedIndex != null) {
+        loadSelectedVideoToWebview();
+      }
+    });
+  }
+
+  void loadSelectedVideoToWebview() async {
+    if (selectedIndex == null) return;
+    final v = videos[selectedIndex!];
+
+    if (kIsWeb) {
+      _currentVideoId = v.videoId;
+      setState(() {
+        _isPlaying = false;
+      });
+    } else {
+      _desktopPlayer.loadVideo(v.videoId);
+    }
+  }
+
+  void _playTimeRange(String videoId, int startSec, int endSec) {
+    if (kIsWeb) {
+      _playTimeRangeWeb(videoId, startSec, endSec);
+    } else {
+      _playTimeRangeDesktop(videoId, startSec, endSec);
+    }
+  }
+
+  void _playTimeRangeWeb(String videoId, int startSec, int endSec) {
+    if (!kIsWeb) return;
+
+    _webPlayer.prepareDisplayDiv();
+    setState(() {
+      _currentVideoId = videoId;
+      _isPlaying = true;
+    });
+
+    _webPlayer.createPlayer(
+      videoId,
+      startSec,
+      endSec,
+      (double time) {
+        if (mounted) {
+          setState(() {
+            currentSec = time;
+          });
+        }
+      },
+      () {
+        if (mounted) {
+          setState(() {
+            _isPlaying = false;
+          });
+          if (isPlayingPlaylist && currentPlaylistIndex != null) {
+            _playNextPlaylistItem();
+          } else {
+            setState(() {
+              isPlayingPlaylist = false;
+              currentPlaylistIndex = null;
+            });
+          }
+        }
+      },
+    );
+  }
+
+  void _playTimeRangeDesktop(String videoId, int startSec, int endSec) {
+    if (kIsWeb) return;
+    _desktopPlayer.playTimeRange(videoId, startSec, endSec);
+
+    // TimeChannelからの更新を監視
+    _startTimeUpdateTimer();
+  }
+
+  void _startTimeUpdateTimer() {
+    _timeUpdateTimer?.cancel();
+    // DesktopではWebViewのJavaScriptChannelから更新される
+    // ここでは簡易的にタイマーで更新（実際の実装ではJavaScriptChannelを使用）
+  }
+
+  void _playNextPlaylistItem() {
+    if (currentPlaylistIndex == null || playlist.isEmpty) return;
+
+    final nextIndex = currentPlaylistIndex! + 1;
+    if (nextIndex >= playlist.length) {
+      setState(() {
+        isPlayingPlaylist = false;
+        currentPlaylistIndex = null;
+      });
+      return;
+    }
+
+    setState(() {
+      currentPlaylistIndex = nextIndex;
+    });
+
+    final item = playlist[nextIndex];
+    _playTimeRange(item.videoId, item.startSec, item.endSec);
+  }
+
+  Future<void> saveStart(String songTitle) async {
+    if (selectedIndex == null) return;
+    final v = videos[selectedIndex!];
+    final now = DateFormat('yyyy-MM-ddTHH:mm:ss').format(DateTime.now());
+    final track = Track(
+      videoId: v.videoId,
+      videoTitle: v.title,
+      startSec: currentSec.round(),
+      endSec: null,
+      songTitle: songTitle,
+      recordedAt: now,
+      note: null,
+    );
+
+    await widget.trackRepository.saveTrack(track);
+    await _loadTracks();
+  }
+
+  Future<void> saveEndForLatestOpenTrack() async {
+    if (selectedIndex == null) return;
+    final v = videos[selectedIndex!];
+
+    final allTracks = await widget.trackRepository.getAllTracks();
+    for (var i = allTracks.length - 1; i >= 0; i--) {
+      final t = allTracks[i];
+      if (t.videoId == v.videoId && t.endSec == null) {
+        await widget.trackRepository
+            .updateTrackEndSec(t.id!, currentSec.round());
+        await _loadTracks();
+        return;
+      }
+    }
+  }
+
+  Future<void> exportCsv() async {
+    final sb = StringBuffer();
+    sb.writeln('song_title,video_title,video_id,start_sec,end_sec,link');
+    for (var t in tracks.reversed) {
+      final link = 'https://youtu.be/${t.videoId}?t=${t.startSec}';
+      sb.writeln(
+          '${CsvExport.escape(t.songTitle)},${CsvExport.escape(t.videoTitle)},${t.videoId},${t.startSec},${t.endSec ?? ''},$link');
+    }
+
+    if (kIsWeb) {
+      final blob = html.Blob([sb.toString()], 'text/csv');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      html.AnchorElement(href: url)
+        ..setAttribute('download', 'song_picker_export.csv')
+        ..click();
+      html.Url.revokeObjectUrl(url);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('CSVファイルをダウンロードしました')));
+    } else {
+      final dir = await getApplicationSupportDirectory();
+      final out = io_platform.File(
+          '${dir.path}${io_platform.Platform.pathSeparator}song_picker_export.csv');
+      await out.writeAsString(sb.toString());
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Exported to ${out.path}')));
+    }
+  }
+
+  void _playPlaylist() {
+    if (playlist.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('プレイリストが空です')),
+      );
+      return;
+    }
+
+    setState(() {
+      isPlayingPlaylist = true;
+      currentPlaylistIndex = 0;
+    });
+
+    final item = playlist[0];
+    _playTimeRange(item.videoId, item.startSec, item.endSec);
+  }
+
+  void _stopPlaylist() {
+    _timeUpdateTimer?.cancel();
+    _webPlayer.pause();
+
+    setState(() {
+      _isPlaying = false;
+      isPlayingPlaylist = false;
+      currentPlaylistIndex = null;
+    });
+  }
+
+  @override
+  void dispose() {
+    _timeUpdateTimer?.cancel();
+    _webPlayer.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final left = Container(
+      width: 320,
+      child: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.all(8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('プレイリスト', style: TextStyle(fontSize: 18)),
+                IconButton(
+                  icon: Icon(Icons.settings),
+                  onPressed: () async {
+                    await Navigator.pushNamed(context, '/playlist-management');
+                    await _loadPlaylist();
+                  },
+                  tooltip: 'プレイリスト管理',
+                ),
+              ],
+            ),
+          ),
+          if (playlist.isNotEmpty)
+            Container(
+              height: 200,
+              child: ListView.builder(
+                itemCount: playlist.length,
+                itemBuilder: (context, idx) {
+                  final item = playlist[idx];
+                  final isCurrent =
+                      isPlayingPlaylist && currentPlaylistIndex == idx;
+                  return ListTile(
+                    title: Text(
+                      item.title ?? '動画 ${item.videoId}',
+                      style: TextStyle(
+                        fontWeight:
+                            isCurrent ? FontWeight.bold : FontWeight.normal,
+                        color: isCurrent ? Colors.blue : null,
+                      ),
+                    ),
+                    subtitle: Text(
+                      '${item.videoId} @ ${item.startSec}s - ${item.endSec}s',
+                    ),
+                    trailing: IconButton(
+                      icon: Icon(Icons.play_arrow, size: 20),
+                      onPressed: () {
+                        setState(() {
+                          isPlayingPlaylist = true;
+                          currentPlaylistIndex = idx;
+                        });
+                        _playTimeRange(
+                            item.videoId, item.startSec, item.endSec);
+                      },
+                      tooltip: '再生',
+                    ),
+                    onTap: () {
+                      setState(() {
+                        isPlayingPlaylist = true;
+                        currentPlaylistIndex = idx;
+                      });
+                      _playTimeRange(item.videoId, item.startSec, item.endSec);
+                    },
+                  );
+                },
+              ),
+            )
+          else
+            Padding(
+              padding: EdgeInsets.all(8),
+              child: Text('プレイリストが空です\n管理画面で追加してください'),
+            ),
+          if (playlist.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  ElevatedButton(
+                    onPressed:
+                        isPlayingPlaylist ? _stopPlaylist : _playPlaylist,
+                    child: Text(isPlayingPlaylist ? '停止' : '再生'),
+                  ),
+                  SizedBox(width: 8),
+                  if (isPlayingPlaylist && currentPlaylistIndex != null)
+                    Text(
+                      '${currentPlaylistIndex! + 1} / ${playlist.length}',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+
+    final right = Column(
+      children: [
+        Expanded(
+          child: Container(
+            color: Colors.black12,
+            child: kIsWeb
+                ? (_currentVideoId != null
+                    ? _buildWebPlayer()
+                    : const Center(child: Text('動画を選択してください')))
+                : _desktopPlayer.buildWebView(),
+          ),
+        ),
+        Container(
+          padding: EdgeInsets.all(8),
+          color: Colors.white,
+          child: Column(
+            children: [
+              Row(children: [
+                Text('Current: ${currentSec.toStringAsFixed(1)}s'),
+                SizedBox(width: 12),
+                ElevatedButton(
+                    onPressed: () async {
+                      final ctrl = TextEditingController();
+                      final secStr = await showDialog<String>(
+                        context: context,
+                        builder: (c) => AlertDialog(
+                          title: Text('Seek to (seconds)'),
+                          content: TextField(controller: ctrl),
+                          actions: [
+                            TextButton(
+                                onPressed: () => Navigator.pop(c, null),
+                                child: Text('Cancel')),
+                            TextButton(
+                                onPressed: () => Navigator.pop(c, ctrl.text),
+                                child: Text('OK')),
+                          ],
+                        ),
+                      );
+                      if (secStr != null && secStr.trim().isNotEmpty) {
+                        final sec = double.tryParse(secStr.trim());
+                        if (sec != null) {
+                          if (kIsWeb) {
+                            if (selectedIndex != null) {
+                              final v = videos[selectedIndex!];
+                              _currentVideoId = v.videoId;
+                              setState(() {});
+                            }
+                          } else {
+                            await _desktopPlayer.seekTo(sec);
+                          }
+                        }
+                      }
+                    },
+                    child: Text('Seek (manually)')),
+                SizedBox(width: 12),
+                ElevatedButton(
+                    onPressed: () {
+                      if (selectedIndex != null) {
+                        final v = videos[selectedIndex!];
+                        final link =
+                            'https://youtu.be/${v.videoId}?t=${currentSec.round()}';
+                        Clipboard.setData(ClipboardData(text: link));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Copied $link')));
+                      }
+                    },
+                    child: Text('Copy link')),
+              ]),
+              SizedBox(height: 8),
+              Row(children: [
+                ElevatedButton(
+                    onPressed: () async {
+                      final title = await _askSongTitle();
+                      if (title != null && title.trim().isNotEmpty) {
+                        await saveStart(title.trim());
+                      }
+                    },
+                    child: Text('Start')),
+                SizedBox(width: 8),
+                ElevatedButton(
+                    onPressed: () async {
+                      await saveEndForLatestOpenTrack();
+                    },
+                    child: Text('End')),
+                SizedBox(width: 8),
+                ElevatedButton(
+                    onPressed: () async {
+                      await _loadTracks();
+                    },
+                    child: Text('Refresh')),
+              ])
+            ],
+          ),
+        )
+      ],
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Uta Picker'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.file_upload),
+            onPressed: importVideosJson,
+            tooltip: '動画リストをインポート',
+          ),
+          IconButton(
+            icon: Icon(Icons.file_download),
+            onPressed: exportCsv,
+            tooltip: 'CSVエクスポート',
+          ),
+          IconButton(
+            icon: Icon(Icons.settings),
+            onPressed: () async {
+              await Navigator.pushNamed(context, '/playlist-management');
+              await _loadPlaylist();
+            },
+            tooltip: 'プレイリスト管理',
+          ),
+        ],
+      ),
+      body: Row(children: [left, Expanded(child: right)]),
+    );
+  }
+
+  Widget _buildWebPlayer() {
+    if (_currentVideoId == null) {
+      return const Center(child: Text('動画を選択してください'));
+    }
+
+    // 再生中（プレイリスト再生または通常再生）の場合はbuildPlayerWidgetを使用
+    if (_isPlaying || (isPlayingPlaylist && currentPlaylistIndex != null)) {
+      return _webPlayer.buildPlayerWidget(_currentVideoId);
+    }
+
+    return _webPlayer.buildIframeWidget(_currentVideoId!);
+  }
+
+  Future<String?> _askSongTitle() {
+    final ctrl = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => AlertDialog(
+        title: Text('Song title'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(hintText: '曲名を入力'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c, null), child: Text('キャンセル')),
+          TextButton(
+              onPressed: () => Navigator.pop(c, ctrl.text), child: Text('保存')),
+        ],
+      ),
+    );
+  }
+}

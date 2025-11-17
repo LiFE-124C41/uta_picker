@@ -1,0 +1,19 @@
+name: song_picker
+description: A simple tool to mark start/end times of songs in YouTube archives
+version: 0.0.1
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  webview_flutter: ^4.0.7
+  file_picker: ^5.2.5
+  path_provider: ^2.0.15
+  sqflite_common_ffi: ^2.2.1
+  shared_preferences: ^2.2.2
+  intl: ^0.18.1
+  url_launcher: ^6.2.2
+
+flutter:
+  uses-material-design: true
