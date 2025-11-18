@@ -457,7 +457,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: GestureDetector(
           onTap: _handleTitleTap,
-          child: Text('UtaPicker'),
+          child: Text('Uta(Gawa)Picker'),
         ),
         actions: [
           // 音声のみモード切り替えボタン（Web + 開発者モードのみ）
@@ -474,28 +474,26 @@ class _HomePageState extends State<HomePage> {
                 // 再生中の場合は再作成
                 if (_isPlaying && _currentVideoId != null) {
                   // 現在の再生位置を取得して再作成
-                  final currentItem = isPlayingPlaylist && currentPlaylistIndex != null
-                      ? playlist[currentPlaylistIndex!]
-                      : null;
+                  final currentItem =
+                      isPlayingPlaylist && currentPlaylistIndex != null
+                          ? playlist[currentPlaylistIndex!]
+                          : null;
                   if (currentItem != null) {
-                    _playTimeRange(
-                        currentItem.videoId, currentItem.startSec, currentItem.endSec);
+                    _playTimeRange(currentItem.videoId, currentItem.startSec,
+                        currentItem.endSec);
                   }
                 }
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      _audioOnlyMode
-                          ? '音声重視モード（低解像度）を有効にしました'
-                          : '通常モードに戻しました',
+                      _audioOnlyMode ? '音声重視モード（低解像度）を有効にしました' : '通常モードに戻しました',
                     ),
                     duration: Duration(seconds: 2),
                   ),
                 );
               },
-              tooltip: _audioOnlyMode
-                  ? '音声重視モード（低解像度）: オフ'
-                  : '音声重視モード（低解像度）: オン',
+              tooltip:
+                  _audioOnlyMode ? '音声重視モード（低解像度）: オフ' : '音声重視モード（低解像度）: オン',
             ),
           if (_isDeveloperModeEnabled)
             IconButton(

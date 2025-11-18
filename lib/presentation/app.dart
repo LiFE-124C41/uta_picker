@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'UtaPicker',
+      title: 'Uta(Gawa)Picker',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: HomePage(
         playlistRepository: playlistRepository,
