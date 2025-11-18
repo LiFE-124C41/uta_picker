@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "dart",
+            "request": "launch",
+            "name": "Flutter (Android)",
+            "program": "lib/main.dart",
+            "flutterMode": "debug"
+        },
+        {
             "type": "chrome",
             "request": "launch",
             "name": "Launch Chrome against localhost",

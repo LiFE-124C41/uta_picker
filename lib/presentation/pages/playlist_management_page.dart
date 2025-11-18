@@ -6,7 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../platform/stubs/io_stub.dart' if (dart.library.io) 'dart:io'
     as io_platform;
-import 'dart:html' as html show Blob, Url, AnchorElement;
+import '../../../platform/stubs/html_stub.dart' if (dart.library.html) 'dart:html' as html show Blob, Url, AnchorElement;
 
 import '../../../domain/entities/playlist_item.dart';
 import '../../../domain/repositories/playlist_repository.dart';

@@ -1,9 +1,10 @@
 // lib/platform/youtube_player/web_player.dart
 import 'dart:async';
-import 'dart:html' as html
-    show document, ScriptElement, IFrameElement, DivElement;
-import 'dart:js' as js;
-import 'dart:ui_web' as ui_web;
+import '../../platform/stubs/html_stub.dart' if (dart.library.html) 'dart:html'
+    as html show document, ScriptElement, IFrameElement, DivElement;
+import '../../platform/stubs/js_stub.dart' if (dart.library.js) 'dart:js' as js;
+import '../../platform/stubs/ui_web_stub.dart'
+    if (dart.library.html) 'dart:ui_web' as ui_web;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -119,7 +120,7 @@ class WebPlayer {
 
       // Flutterのwidgetツリーに登録
       try {
-        ui_web.platformViewRegistry.registerViewFactory(
+        ui_web.PlatformViewRegistry.registerViewFactory(
           'youtube-player-display',
           (int viewId) => displayDiv!,
         );
@@ -353,61 +354,65 @@ class WebPlayer {
       return const Center(child: Text('動画を選択してください'));
     }
 
+    if (!kIsWeb) {
+      return const Center(child: Text('WebPlayerはWebプラットフォームでのみ利用可能です'));
+    }
+
     final viewType = 'youtube-player-display';
 
-    if (kIsWeb) {
-      final displayDiv =
-          html.document.getElementById('youtube-player-display-div');
-      if (displayDiv == null) {
-        prepareDisplayDiv();
-      }
+    final displayDiv =
+        html.document.getElementById('youtube-player-display-div');
+    if (displayDiv == null) {
+      prepareDisplayDiv();
+    }
 
-      try {
-        ui_web.platformViewRegistry.registerViewFactory(
-          viewType,
-          (int viewId) {
-            final div =
-                html.document.getElementById('youtube-player-display-div');
-            if (div != null) {
-              return div;
-            }
-            final newDiv = html.DivElement()
-              ..id = 'youtube-player-display-div'
-              ..style.width = '100%'
-              ..style.height = '100%';
-            html.document.body!.append(newDiv);
-            return newDiv;
-          },
-        );
-      } catch (e) {
-        // Already registered, ignore
-      }
+    try {
+      ui_web.PlatformViewRegistry.registerViewFactory(
+        viewType,
+        (int viewId) {
+          final div =
+              html.document.getElementById('youtube-player-display-div');
+          if (div != null) {
+            return div;
+          }
+          final newDiv = html.DivElement()
+            ..id = 'youtube-player-display-div'
+            ..style.width = '100%'
+            ..style.height = '100%';
+          html.document.body!.append(newDiv);
+          return newDiv;
+        },
+      );
+    } catch (e) {
+      // Already registered, ignore
     }
 
     return HtmlElementView(viewType: viewType);
   }
 
   Widget buildIframeWidget(String videoId) {
+    if (!kIsWeb) {
+      return const Center(child: Text('WebPlayerはWebプラットフォームでのみ利用可能です'));
+    }
+
     final viewType = 'youtube-iframe-$videoId';
 
-    if (kIsWeb) {
-      try {
-        String src =
-            'https://www.youtube.com/embed/$videoId?enablejsapi=1&playsinline=1&rel=0';
+    try {
+      String src =
+          'https://www.youtube.com/embed/$videoId?enablejsapi=1&playsinline=1&rel=0';
 
-        final iframe = html.IFrameElement()
-          ..src = src
-          ..style.border = 'none'
-          ..style.width = '100%'
-          ..style.height = '100%';
+      final iframe = html.IFrameElement()
+        ..src = src
+        ..style.border = 'none'
+        ..style.width = '100%'
+        ..style.height = '100%';
 
-        ui_web.platformViewRegistry.registerViewFactory(
-          viewType,
-          (int viewId) => iframe,
-        );
-      } catch (e) {
-        // Already registered, ignore
-      }
+      ui_web.PlatformViewRegistry.registerViewFactory(
+        viewType,
+        (int viewId) => iframe,
+      );
+    } catch (e) {
+      // Already registered, ignore
     }
 
     return HtmlElementView(viewType: viewType);
@@ -418,12 +423,14 @@ class WebPlayer {
     if (!kIsWeb) return;
     try {
       // すべてのYouTube iframeを検索
-      final iframes = html.document.querySelectorAll('iframe[src*="youtube.com"]');
+      final iframes =
+          html.document.querySelectorAll('iframe[src*="youtube.com"]');
       for (var iframe in iframes) {
         (iframe as html.IFrameElement).style.pointerEvents = 'none';
       }
       // YouTube Player APIで作成されたプレイヤーのiframeも無効化
-      final displayDiv = html.document.getElementById('youtube-player-display-div');
+      final displayDiv =
+          html.document.getElementById('youtube-player-display-div');
       if (displayDiv != null) {
         final playerIframes = displayDiv.querySelectorAll('iframe');
         for (var iframe in playerIframes) {
@@ -440,12 +447,14 @@ class WebPlayer {
     if (!kIsWeb) return;
     try {
       // すべてのYouTube iframeを検索
-      final iframes = html.document.querySelectorAll('iframe[src*="youtube.com"]');
+      final iframes =
+          html.document.querySelectorAll('iframe[src*="youtube.com"]');
       for (var iframe in iframes) {
         (iframe as html.IFrameElement).style.pointerEvents = 'auto';
       }
       // YouTube Player APIで作成されたプレイヤーのiframeも有効化
-      final displayDiv = html.document.getElementById('youtube-player-display-div');
+      final displayDiv =
+          html.document.getElementById('youtube-player-display-div');
       if (displayDiv != null) {
         final playerIframes = displayDiv.querySelectorAll('iframe');
         for (var iframe in playerIframes) {
