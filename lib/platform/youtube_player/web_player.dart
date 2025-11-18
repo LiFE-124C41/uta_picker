@@ -12,8 +12,10 @@ class WebPlayer {
   dynamic _youtubePlayer;
   Timer? _playbackTimer;
   Timer? _apiCheckTimer;
+  Timer? _qualityCheckTimer;
   String? _currentVideoId;
   bool _isApiReady = false;
+  bool _currentAudioOnlyMode = false;
   final List<_PendingPlayerCreation> _pendingCreations = [];
 
   String? get currentVideoId => _currentVideoId;
@@ -87,6 +89,7 @@ class WebPlayer {
         item.endSec,
         item.onTimeUpdate,
         item.onEnded,
+        audioOnly: item.audioOnly,
       );
     }
   }
@@ -120,7 +123,7 @@ class WebPlayer {
 
       // Flutterのwidgetツリーに登録
       try {
-        ui_web.PlatformViewRegistry.registerViewFactory(
+        ui_web.platformViewRegistry.registerViewFactory(
           'youtube-player-display',
           (int viewId) => displayDiv!,
         );
@@ -138,8 +141,9 @@ class WebPlayer {
     int startSec,
     int endSec,
     Function(double) onTimeUpdate,
-    VoidCallback? onEnded,
-  ) {
+    VoidCallback? onEnded, {
+    bool audioOnly = false,
+  }) {
     if (!kIsWeb) return;
 
     // コールバックが設定されていない場合は設定
@@ -157,6 +161,7 @@ class WebPlayer {
         endSec: endSec,
         onTimeUpdate: onTimeUpdate,
         onEnded: onEnded,
+        audioOnly: audioOnly,
       ));
 
       // スクリプトがロードされていない場合はロード
@@ -175,7 +180,8 @@ class WebPlayer {
       return;
     }
 
-    _createPlayerInternal(videoId, startSec, endSec, onTimeUpdate, onEnded);
+    _createPlayerInternal(videoId, startSec, endSec, onTimeUpdate, onEnded,
+        audioOnly: audioOnly);
   }
 
   void _createPlayerInternal(
@@ -183,8 +189,9 @@ class WebPlayer {
     int startSec,
     int endSec,
     Function(double) onTimeUpdate,
-    VoidCallback? onEnded,
-  ) {
+    VoidCallback? onEnded, {
+    bool audioOnly = false,
+  }) {
     if (!kIsWeb) return;
 
     try {
@@ -221,7 +228,8 @@ class WebPlayer {
         prepareDisplayDiv();
         Future.delayed(Duration(milliseconds: 100), () {
           _createPlayerInternal(
-              videoId, startSec, endSec, onTimeUpdate, onEnded);
+              videoId, startSec, endSec, onTimeUpdate, onEnded,
+              audioOnly: audioOnly);
         });
         return;
       }
@@ -232,19 +240,45 @@ class WebPlayer {
         ..style.height = '100%';
       displayDiv.append(apiDiv);
 
+      // プレイヤー設定を構築
+      final playerVars = <String, dynamic>{
+        'playsinline': 1,
+        'rel': 0,
+        'start': startSec,
+        'enablejsapi': 1,
+      };
+
+      // 音声のみモードの場合、最低解像度を設定してパケット量を削減
+      if (audioOnly) {
+        playerVars['quality'] = 'tiny'; // 最低解像度（144p相当）
+        playerVars['controls'] = 0; // コントロールを非表示
+        print('Audio-only mode: Using lowest quality to reduce bandwidth');
+      }
+
       // 新しいプレイヤーを作成
       final playerConfig = js.JsObject.jsify({
         'videoId': videoId,
-        'playerVars': {
-          'playsinline': 1,
-          'rel': 0,
-          'start': startSec,
-          'enablejsapi': 1,
-        },
+        'playerVars': playerVars,
         'events': {
           'onReady': (event) {
             try {
               final player = (event as js.JsObject)['target'];
+              // 音声のみモードの場合、解像度を最低に設定
+              if (audioOnly) {
+                try {
+                  player.callMethod('setPlaybackQuality', ['tiny']);
+                  // 少し遅延してから再度設定（YouTubeが自動的に品質を変更する場合があるため）
+                  Future.delayed(Duration(milliseconds: 500), () {
+                    try {
+                      player.callMethod('setPlaybackQuality', ['tiny']);
+                    } catch (e) {
+                      print('Error setting playback quality (delayed): $e');
+                    }
+                  });
+                } catch (e) {
+                  print('Error setting playback quality: $e');
+                }
+              }
               player.callMethod('seekTo', [startSec, true]);
               player.callMethod('playVideo');
               monitorPlaybackTime(
@@ -260,11 +294,42 @@ class WebPlayer {
               final player = jsEvent['target'];
               if (state == 1) {
                 // 再生中
+                // 音声のみモードの場合、再生開始時に品質を再設定
+                if (audioOnly) {
+                  try {
+                    player.callMethod('setPlaybackQuality', ['tiny']);
+                    // 品質チェックタイマーを開始
+                    _startQualityCheckTimer(player);
+                  } catch (e) {
+                    print(
+                        'Error setting playback quality in onStateChange: $e');
+                  }
+                }
                 monitorPlaybackTime(
                     player, startSec, endSec, onTimeUpdate, onEnded);
               }
             } catch (e) {
               print('Error in onStateChange: $e');
+            }
+          },
+          'onPlaybackQualityChange': (event) {
+            // 品質が変更されたときに監視
+            if (audioOnly) {
+              try {
+                final jsEvent = event as js.JsObject;
+                final player = jsEvent['target'];
+                final quality = jsEvent['data'];
+                print('Playback quality changed to: $quality');
+                // tiny以外の品質に変更された場合は再度tinyに設定
+                if (quality != null &&
+                    quality != 'tiny' &&
+                    quality != 'small') {
+                  print('Forcing quality back to tiny...');
+                  player.callMethod('setPlaybackQuality', ['tiny']);
+                }
+              } catch (e) {
+                print('Error handling playback quality change: $e');
+              }
             }
           },
           'onError': (event) {
@@ -278,10 +343,41 @@ class WebPlayer {
       _youtubePlayer = js.JsObject(PlayerConstructor, [apiDivId, playerConfig]);
 
       _currentVideoId = videoId;
-      print('YouTube player created for video: $videoId');
+      _currentAudioOnlyMode = audioOnly;
+      print(
+          'YouTube player created for video: $videoId (audioOnly: $audioOnly)');
     } catch (e) {
       print('Error creating YouTube player: $e');
     }
+  }
+
+  void _startQualityCheckTimer(dynamic player) {
+    if (!kIsWeb) return;
+
+    _qualityCheckTimer?.cancel();
+    _qualityCheckTimer = null;
+
+    if (!_currentAudioOnlyMode) return;
+
+    // 音声のみモードの場合、定期的に品質をチェックして再設定
+    // より頻繁にチェック（1秒ごと）して、YouTubeが品質を変更した場合に即座に対応
+    _qualityCheckTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      try {
+        final jsPlayer = player as js.JsObject;
+        final currentQuality = jsPlayer.callMethod('getPlaybackQuality');
+        if (currentQuality != null &&
+            currentQuality != 'tiny' &&
+            currentQuality != 'small' &&
+            currentQuality != 'medium') {
+          print('Quality is $currentQuality, forcing to tiny...');
+          jsPlayer.callMethod('setPlaybackQuality', ['tiny']);
+        }
+      } catch (e) {
+        // エラーが発生した場合はタイマーを停止
+        timer.cancel();
+        _qualityCheckTimer = null;
+      }
+    });
   }
 
   void monitorPlaybackTime(
@@ -339,6 +435,7 @@ class WebPlayer {
   void dispose() {
     _playbackTimer?.cancel();
     _apiCheckTimer?.cancel();
+    _qualityCheckTimer?.cancel();
     if (kIsWeb && _youtubePlayer != null) {
       try {
         (_youtubePlayer as js.JsObject).callMethod('destroy');
@@ -367,7 +464,7 @@ class WebPlayer {
     }
 
     try {
-      ui_web.PlatformViewRegistry.registerViewFactory(
+      ui_web.platformViewRegistry.registerViewFactory(
         viewType,
         (int viewId) {
           final div =
@@ -407,7 +504,7 @@ class WebPlayer {
         ..style.width = '100%'
         ..style.height = '100%';
 
-      ui_web.PlatformViewRegistry.registerViewFactory(
+      ui_web.platformViewRegistry.registerViewFactory(
         viewType,
         (int viewId) => iframe,
       );
@@ -473,6 +570,7 @@ class _PendingPlayerCreation {
   final int endSec;
   final Function(double) onTimeUpdate;
   final VoidCallback? onEnded;
+  final bool audioOnly;
 
   _PendingPlayerCreation({
     required this.videoId,
@@ -480,5 +578,6 @@ class _PendingPlayerCreation {
     required this.endSec,
     required this.onTimeUpdate,
     this.onEnded,
+    this.audioOnly = false,
   });
 }

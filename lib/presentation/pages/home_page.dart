@@ -41,6 +41,7 @@ class _HomePageState extends State<HomePage> {
   bool _isDeveloperModeEnabled = false;
   int _developerModeTapCount = 0;
   Timer? _developerModeTapTimer;
+  bool _audioOnlyMode = false;
 
   late WebPlayer _webPlayer;
   late DesktopPlayer _desktopPlayer;
@@ -134,6 +135,7 @@ class _HomePageState extends State<HomePage> {
           }
         }
       },
+      audioOnly: _audioOnlyMode,
     );
   }
 
@@ -458,6 +460,43 @@ class _HomePageState extends State<HomePage> {
           child: Text('UtaPicker'),
         ),
         actions: [
+          // 音声のみモード切り替えボタン（Web + 開発者モードのみ）
+          if (kIsWeb && _isDeveloperModeEnabled)
+            IconButton(
+              icon: Icon(
+                _audioOnlyMode ? Icons.audiotrack : Icons.video_library,
+                color: _audioOnlyMode ? Colors.blue : null,
+              ),
+              onPressed: () {
+                setState(() {
+                  _audioOnlyMode = !_audioOnlyMode;
+                });
+                // 再生中の場合は再作成
+                if (_isPlaying && _currentVideoId != null) {
+                  // 現在の再生位置を取得して再作成
+                  final currentItem = isPlayingPlaylist && currentPlaylistIndex != null
+                      ? playlist[currentPlaylistIndex!]
+                      : null;
+                  if (currentItem != null) {
+                    _playTimeRange(
+                        currentItem.videoId, currentItem.startSec, currentItem.endSec);
+                  }
+                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      _audioOnlyMode
+                          ? '音声重視モード（低解像度）を有効にしました'
+                          : '通常モードに戻しました',
+                    ),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              tooltip: _audioOnlyMode
+                  ? '音声重視モード（低解像度）: オフ'
+                  : '音声重視モード（低解像度）: オン',
+            ),
           if (_isDeveloperModeEnabled)
             IconButton(
               icon: Icon(Icons.file_upload),
