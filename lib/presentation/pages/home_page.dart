@@ -340,7 +340,10 @@ class _HomePageState extends State<HomePage> {
                     ),
                     subtitle: Text(subtitleParts.join('\n')),
                     trailing: IconButton(
-                      icon: Icon(Icons.play_arrow, size: 20),
+                      icon: Icon(
+                        isCurrent ? Icons.equalizer : Icons.play_arrow,
+                        size: 20,
+                      ),
                       onPressed: () {
                         setState(() {
                           isPlayingPlaylist = true;
@@ -349,7 +352,7 @@ class _HomePageState extends State<HomePage> {
                         _playTimeRange(
                             item.videoId, item.startSec, item.endSec);
                       },
-                      tooltip: '再生',
+                      tooltip: isCurrent ? '再生中' : '再生',
                     ),
                     onTap: () {
                       setState(() {
