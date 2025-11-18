@@ -12,6 +12,7 @@ import '../../../domain/entities/playlist_item.dart';
 import '../../../domain/repositories/playlist_repository.dart';
 import '../../../core/utils/csv_export.dart';
 import '../../../core/utils/csv_import.dart';
+import '../../../core/utils/time_format.dart';
 
 class PlaylistManagementPage extends StatefulWidget {
   final PlaylistRepository playlistRepository;
@@ -50,13 +51,6 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
     return minutes * 60 + seconds;
   }
 
-  /// 秒数を'00:00'形式（分:秒）の文字列に変換
-  /// 例: 90 -> "01:30", 30 -> "00:30"
-  String _formatTimeString(int seconds) {
-    final minutes = seconds ~/ 60;
-    final secs = seconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
-  }
 
   Future<void> _loadPlaylist() async {
     final loadedPlaylist = await widget.playlistRepository.getPlaylist();
@@ -92,9 +86,9 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
     final videoIdController = TextEditingController(text: initialVideoId ?? '');
     final startSecController = TextEditingController(
         text:
-            initialStartSec != null ? _formatTimeString(initialStartSec) : '');
+            initialStartSec != null ? TimeFormat.formatTimeString(initialStartSec) : '');
     final endSecController = TextEditingController(
-        text: initialEndSec != null ? _formatTimeString(initialEndSec) : '');
+        text: initialEndSec != null ? TimeFormat.formatTimeString(initialEndSec) : '');
     final videoTitleController =
         TextEditingController(text: initialVideoTitle ?? '');
     final songTitleController =
@@ -392,7 +386,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                         subtitleParts.add('動画: ${item.videoTitle}');
                       }
                       subtitleParts.add(
-                          '${item.videoId} @ ${_formatTimeString(item.startSec)} - ${_formatTimeString(item.endSec)}');
+                          '${item.videoId} @ ${TimeFormat.formatTimeString(item.startSec)} - ${TimeFormat.formatTimeString(item.endSec)}');
                       return ListTile(
                         key: ObjectKey(item),
                         title: Text(displayTitle),

@@ -16,6 +16,7 @@ import '../../../data/repositories/playlist_repository_impl.dart';
 import '../../../platform/youtube_player/web_player.dart';
 import '../../../platform/youtube_player/desktop_player.dart';
 import '../../../core/utils/csv_export.dart';
+import '../../../core/utils/time_format.dart';
 
 class HomePage extends StatefulWidget {
   final PlaylistRepository playlistRepository;
@@ -331,7 +332,7 @@ class _HomePageState extends State<HomePage> {
                     subtitleParts.add('動画: ${item.videoTitle}');
                   }
                   subtitleParts.add(
-                      '${item.videoId} @ ${item.startSec}s - ${item.endSec}s');
+                      '${item.videoId} @ ${TimeFormat.formatTimeString(item.startSec)} - ${TimeFormat.formatTimeString(item.endSec)}');
                   return ListTile(
                     title: Text(
                       displayTitle,
