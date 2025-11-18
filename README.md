@@ -143,8 +143,50 @@ uta_picker/
 
 このプロジェクトのライセンスについては、[LICENSE](LICENSE)ファイルを参照してください。
 
+## GitHub Pagesへのデプロイ
+
+このアプリのWeb版をGitHub Pagesにデプロイする手順：
+
+### 1. GitHub Pagesの設定
+
+1. GitHubリポジトリの「Settings」→「Pages」に移動
+2. 「Source」で「GitHub Actions」を選択
+
+### 2. ワークフローの確認
+
+`.github/workflows/deploy.yml`ファイルが作成されています。このファイルの以下の点を確認してください：
+
+- `branches`セクションで、お使いのメインブランチ名（`main`または`master`）が指定されているか
+- `base-href`がリポジトリ名と一致しているか（デフォルトは`/uta_picker/`）
+
+リポジトリ名が異なる場合は、`.github/workflows/deploy.yml`の以下の行を修正してください：
+
+```yaml
+run: flutter build web --base-href "/uta_picker/" --release
+```
+
+`/uta_picker/`の部分を`/あなたのリポジトリ名/`に変更してください。
+
+### 3. デプロイの実行
+
+1. メインブランチにプッシュすると、自動的にデプロイが開始されます
+2. または、「Actions」タブから手動でワークフローを実行することもできます
+3. デプロイが完了すると、`https://あなたのユーザー名.github.io/uta_picker/`でアクセスできます
+
+### 4. ローカルでの確認
+
+ローカルでビルドして確認する場合：
+
+```bash
+flutter build web --base-href "/uta_picker/" --release
+cd build/web
+# ローカルサーバーで確認（例：Python）
+python -m http.server 8000
+```
+
 ## 注意事項
 
 - YouTube Data APIを使用する場合は、APIキーの使用制限に注意してください
 - データベースファイルは定期的にバックアップすることを推奨します
 - WebViewを使用するため、インターネット接続が必要です
+- GitHub Pagesにデプロイする場合、Web版では一部の機能（ファイルシステムへのアクセスなど）が制限される可能性があります
