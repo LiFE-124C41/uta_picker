@@ -29,6 +29,9 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && startsWith(github.event.pull_request.head.ref, 'release/'))
     outputs:
       version: ${{ steps.version.outputs.new_version || steps.get_version.outputs.version }}
     steps:
@@ -157,7 +160,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'pull_request' && github.event.pull_request.merged == true) ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')) ||
       (github.event_name == 'workflow_dispatch' && needs.release.result == 'success')
     needs: [release]
     steps:
