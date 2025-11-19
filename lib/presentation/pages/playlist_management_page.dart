@@ -38,22 +38,6 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
     _loadPlaylist();
   }
 
-  /// '00:00'形式（分:秒）の文字列を秒数に変換
-  /// 例: "01:30" -> 90, "00:30" -> 30
-  int? _parseTimeString(String timeStr) {
-    final parts = timeStr.split(':');
-    if (parts.length != 2) return null;
-
-    final minutes = int.tryParse(parts[0]);
-    final seconds = int.tryParse(parts[1]);
-
-    if (minutes == null || seconds == null) return null;
-    if (seconds < 0 || seconds >= 60) return null;
-    if (minutes < 0) return null;
-
-    return minutes * 60 + seconds;
-  }
-
   Future<void> _loadPlaylist() async {
     final loadedPlaylist = await widget.playlistRepository.getPlaylist();
     setState(() {
@@ -112,8 +96,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                 controller: videoIdController,
                 decoration: InputDecoration(
                   labelText: '動画IDまたはURL',
-                  hintText:
-                      '例: dQw4w9WgXcQ または https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                  hintText: '例: dQw4w9WgXcQ または 動画URL',
                 ),
                 autofocus: true,
               ),
@@ -121,16 +104,16 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
               TextField(
                 controller: startSecController,
                 decoration: InputDecoration(
-                  labelText: '開始時刻（分:秒）',
-                  hintText: '例: 00:30',
+                  labelText: '開始時刻（分:秒 または 時:分:秒）',
+                  hintText: '例: 00:30 または 01:07:52',
                 ),
               ),
               SizedBox(height: 8),
               TextField(
                 controller: endSecController,
                 decoration: InputDecoration(
-                  labelText: '終了時刻（分:秒）',
-                  hintText: '例: 01:30',
+                  labelText: '終了時刻（分:秒 または 時:分:秒）',
+                  hintText: '例: 01:30 または 01:10:00',
                 ),
               ),
               SizedBox(height: 8),
@@ -188,12 +171,14 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
         return;
       }
 
-      final startSec = _parseTimeString(startSecStr);
-      final endSec = _parseTimeString(endSecStr);
+      final startSec = TimeFormat.parseTimeString(startSecStr);
+      final endSec = TimeFormat.parseTimeString(endSecStr);
 
       if (startSec == null || endSec == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('開始時刻と終了時刻は「分:秒」形式（例: 00:30）で入力してください')),
+          SnackBar(
+              content: Text(
+                  '開始時刻と終了時刻は「分:秒」（例: 00:30）または「時:分:秒」（例: 01:07:52）形式で入力してください')),
         );
         return;
       }
