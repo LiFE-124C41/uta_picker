@@ -4,6 +4,7 @@ import 'pages/home_page.dart';
 import 'pages/playlist_management_page.dart';
 import 'pages/playlist_import_page.dart';
 import '../../domain/repositories/playlist_repository.dart';
+import '../../core/services/analytics_service.dart';
 
 class MyApp extends StatelessWidget {
   final PlaylistRepository playlistRepository;
@@ -18,6 +19,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Uta(Gawa)Picker',
       theme: ThemeData(primarySwatch: Colors.blue),
+      navigatorObservers: [
+        if (AnalyticsService.observer != null) AnalyticsService.observer!,
+      ],
       home: HomePage(
         playlistRepository: playlistRepository,
       ),
