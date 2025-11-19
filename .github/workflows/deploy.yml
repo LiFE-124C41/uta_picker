@@ -2,9 +2,19 @@ name: Deploy to GitHub Pages
 
 on:
   workflow_dispatch:  # 手動実行のみ
+    inputs:
+      version_type:
+        description: 'バージョンインクリメントタイプ'
+        required: false
+        default: 'minor'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 permissions:
-  contents: read
+  contents: write  # タグとリリースを作成するため
   pages: write
   id-token: write
 
@@ -13,8 +23,92 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.new_version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 全履歴を取得（タグ作成のため）
+
+      - name: Get current version
+        id: current_version
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //')
+          echo "current_version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $VERSION"
+
+      - name: Increment version
+        id: version
+        run: |
+          CURRENT_VERSION="${{ steps.current_version.outputs.current_version }}"
+          VERSION_TYPE="${{ github.event.inputs.version_type || 'patch' }}"
+          
+          # バージョンを分割
+          IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+          
+          # バージョンをインクリメント
+          case "$VERSION_TYPE" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+          
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+          
+          # pubspec.yamlを更新
+          sed -i "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Commit version bump
+        run: |
+          git add pubspec.yaml
+          git commit -m "Bump version to ${{ steps.version.outputs.new_version }}" || exit 0
+
+      - name: Create tag
+        run: |
+          git tag -a "v${{ steps.version.outputs.new_version }}" -m "Release v${{ steps.version.outputs.new_version }}"
+
+      - name: Push changes and tag
+        run: |
+          git push origin HEAD:$(git branch --show-current)
+          git push origin "v${{ steps.version.outputs.new_version }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.new_version }}
+          name: Release v${{ steps.version.outputs.new_version }}
+          body: |
+            ## Release v${{ steps.version.outputs.new_version }}
+            
+            Automated release created by GitHub Actions.
+          draft: false
+          prerelease: false
+
   build:
     runs-on: ubuntu-latest
+    needs: release
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../platform/stubs/io_stub.dart' if (dart.library.io) 'dart:io'
     as io_platform;
 import '../../../platform/stubs/html_stub.dart'
@@ -43,6 +44,7 @@ class _HomePageState extends State<HomePage> {
   int _developerModeTapCount = 0;
   Timer? _developerModeTapTimer;
   bool _audioOnlyMode = false;
+  String? _appVersion;
 
   late WebPlayer _webPlayer;
   late DesktopPlayer _desktopPlayer;
@@ -67,6 +69,16 @@ class _HomePageState extends State<HomePage> {
       _desktopPlayer.initialize();
     } else {
       _webPlayer.initialize();
+    }
+
+    // バージョン情報を取得
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      setState(() {
+        _appVersion = packageInfo.version;
+      });
+    } catch (e) {
+      // バージョン情報の取得に失敗した場合は無視
     }
 
     await _loadPlaylist();
@@ -458,7 +470,18 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: GestureDetector(
           onTap: _handleTitleTap,
-          child: Text('Uta(Gawa)Picker'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Uta(Gawa)Picker'),
+              if (_isDeveloperModeEnabled && _appVersion != null)
+                Text(
+                  'v$_appVersion',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+                ),
+            ],
+          ),
         ),
         actions: [
           // 音声のみモード切り替えボタン（Web + 開発者モードのみ）
