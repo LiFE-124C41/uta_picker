@@ -9,6 +9,7 @@ import '../../../platform/stubs/io_stub.dart' if (dart.library.io) 'dart:io'
 import '../../../domain/entities/video_item.dart';
 import '../../../domain/entities/playlist_item.dart';
 import '../../../domain/repositories/playlist_repository.dart';
+import '../../../core/services/analytics_service.dart';
 
 class PlaylistImportPage extends StatefulWidget {
   final PlaylistRepository playlistRepository;
@@ -159,6 +160,9 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
             .toList();
         isLoading = false;
       });
+
+      // アナリティクス: JSONインポート
+      AnalyticsService.logJsonImported(videoCount: videos.length);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${videos.length}件の動画を読み込みました')),
@@ -325,6 +329,12 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
       );
 
       await widget.playlistRepository.addPlaylistItem(item);
+      // アナリティクス: プレイリストアイテム追加（インポートページから）
+      AnalyticsService.logPlaylistItemAdded(
+        videoId: item.videoId,
+        startSec: item.startSec,
+        endSec: item.endSec,
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('プレイリストに追加しました')),
       );

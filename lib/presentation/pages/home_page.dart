@@ -18,6 +18,7 @@ import '../../../platform/youtube_player/web_player.dart';
 import '../../../platform/youtube_player/desktop_player.dart';
 import '../../../core/utils/csv_export.dart';
 import '../../../core/utils/time_format.dart';
+import '../../../core/services/analytics_service.dart';
 
 class HomePage extends StatefulWidget {
   final PlaylistRepository playlistRepository;
@@ -94,6 +95,9 @@ class _HomePageState extends State<HomePage> {
   void loadSelectedVideoToWebview() async {
     if (selectedIndex == null) return;
     final v = videos[selectedIndex!];
+
+    // アナリティクス: 動画選択
+    AnalyticsService.logVideoSelected(videoId: v.videoId);
 
     if (kIsWeb) {
       _currentVideoId = v.videoId;
@@ -194,6 +198,9 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
+    // アナリティクス: CSVエクスポート
+    AnalyticsService.logCsvExported(itemCount: playlist.length);
+
     final sb = StringBuffer();
     sb.writeln('video_title,song_title,video_id,start_sec,end_sec,link');
     for (var item in playlist) {
@@ -229,6 +236,9 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
+    // アナリティクス: プレイリスト再生
+    AnalyticsService.logPlaylistPlayed(itemCount: playlist.length);
+
     setState(() {
       isPlayingPlaylist = true;
       currentPlaylistIndex = 0;
@@ -258,6 +268,8 @@ class _HomePageState extends State<HomePage> {
         _isDeveloperModeEnabled = true;
         _developerModeTapCount = 0;
       });
+      // アナリティクス: 開発者モード有効化
+      AnalyticsService.logDeveloperModeEnabled();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('開発者モードが有効になりました')),
       );
@@ -495,6 +507,8 @@ class _HomePageState extends State<HomePage> {
                 setState(() {
                   _audioOnlyMode = !_audioOnlyMode;
                 });
+                // アナリティクス: 音声のみモード切り替え
+                AnalyticsService.logAudioOnlyModeToggled(enabled: _audioOnlyMode);
                 // 再生中の場合は再作成
                 if (_isPlaying && _currentVideoId != null) {
                   // 現在の再生位置を取得して再作成
@@ -708,6 +722,12 @@ class _HomePageState extends State<HomePage> {
 
         await widget.playlistRepository.addPlaylistItem(item);
         await _loadPlaylist();
+        // アナリティクス: プレイリストアイテム追加
+        AnalyticsService.logPlaylistItemAdded(
+          videoId: item.videoId,
+          startSec: item.startSec,
+          endSec: item.endSec,
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('プレイリストに追加しました')),
         );

@@ -13,6 +13,7 @@ import '../../../domain/repositories/playlist_repository.dart';
 import '../../../core/utils/csv_export.dart';
 import '../../../core/utils/csv_import.dart';
 import '../../../core/utils/time_format.dart';
+import '../../../core/services/analytics_service.dart';
 
 class PlaylistManagementPage extends StatefulWidget {
   final PlaylistRepository playlistRepository;
@@ -202,6 +203,12 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
         await widget.playlistRepository.updatePlaylistItem(index, item);
       } else {
         await widget.playlistRepository.addPlaylistItem(item);
+        // アナリティクス: プレイリストアイテム追加（管理画面から）
+        AnalyticsService.logPlaylistItemAdded(
+          videoId: item.videoId,
+          startSec: item.startSec,
+          endSec: item.endSec,
+        );
       }
       await _loadPlaylist();
     }
@@ -268,6 +275,8 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
 
       await widget.playlistRepository.savePlaylist(importedPlaylist);
       await _loadPlaylist();
+      // アナリティクス: CSVインポート
+      AnalyticsService.logCsvImported(itemCount: importedPlaylist.length);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text('${importedPlaylist.length}件のプレイリスト項目をインポートしました')),
@@ -286,6 +295,9 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
       );
       return;
     }
+
+    // アナリティクス: CSVエクスポート（管理画面から）
+    AnalyticsService.logCsvExported(itemCount: playlist.length);
 
     final sb = StringBuffer();
     sb.writeln('video_title,song_title,video_id,start_sec,end_sec,link');

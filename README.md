@@ -178,6 +178,50 @@ uta_picker/
 
 このプロジェクトのライセンスについては、[LICENSE](LICENSE)ファイルを参照してください。
 
+## Firebase Analyticsの設定
+
+このアプリはFirebase Analyticsを使用しています。ローカル開発とデプロイの両方で設定が必要です。
+
+### ローカル開発環境の設定
+
+1. Firebase Console（https://console.firebase.google.com/）でプロジェクトを作成
+2. Webアプリを追加して設定情報を取得
+3. `lib/firebase_options.dart.example`をコピーして`lib/firebase_options.dart`を作成
+4. Firebase Consoleから取得した設定値を`lib/firebase_options.dart`に記入
+
+```bash
+cp lib/firebase_options.dart.example lib/firebase_options.dart
+# その後、firebase_options.dartを編集して実際の値を入力
+```
+
+**注意**: `lib/firebase_options.dart`は機密情報を含むため、Gitにコミットされません（`.gitignore`で除外されています）。
+
+### GitHub Actionsデプロイ時の設定
+
+デプロイ時にFirebase設定を自動生成するため、GitHub Secretsに以下の値を設定してください：
+
+1. GitHubリポジトリの「Settings」→「Secrets and variables」→「Actions」に移動
+2. 「New repository secret」をクリックして、以下のSecretsを追加：
+
+**必須（Webアプリ用）:**
+- `FIREBASE_API_KEY`: Firebase WebアプリのAPIキー
+- `FIREBASE_APP_ID`: Firebase WebアプリのApp ID（例: `1:123456789:web:abcdef`）
+- `FIREBASE_MESSAGING_SENDER_ID`: Messaging Sender ID
+- `FIREBASE_PROJECT_ID`: FirebaseプロジェクトID
+- `FIREBASE_AUTH_DOMAIN`: Auth Domain（例: `your-project.firebaseapp.com`）
+- `FIREBASE_STORAGE_BUCKET`: Storage Bucket（例: `your-project.appspot.com`）
+- `FIREBASE_MEASUREMENT_ID`: Measurement ID（Google Analytics用、例: `G-XXXXXXXXXX`）
+
+**オプション（Android/iOS/macOSアプリ用）:**
+- `FIREBASE_ANDROID_API_KEY`: AndroidアプリのAPIキー
+- `FIREBASE_ANDROID_APP_ID`: AndroidアプリのApp ID
+- `FIREBASE_IOS_API_KEY`: iOSアプリのAPIキー
+- `FIREBASE_IOS_APP_ID`: iOSアプリのApp ID
+- `FIREBASE_MACOS_API_KEY`: macOSアプリのAPIキー
+- `FIREBASE_MACOS_APP_ID`: macOSアプリのApp ID
+
+これらの値は、Firebase Consoleの「プロジェクトの設定」→「マイアプリ」から取得できます。
+
 ## GitHub Pagesへのデプロイ
 
 このアプリのWeb版をGitHub Pagesにデプロイする手順：
@@ -204,8 +248,8 @@ run: flutter build web --base-href "/uta_picker/" --release
 
 ### 3. デプロイの実行
 
-1. メインブランチにプッシュすると、自動的にデプロイが開始されます
-2. または、「Actions」タブから手動でワークフローを実行することもできます
+1. 「Actions」タブから「Deploy to GitHub Pages」ワークフローを手動実行
+2. バージョンインクリメントタイプを選択（patch/minor/major）
 3. デプロイが完了すると、`https://あなたのユーザー名.github.io/uta_picker/`でアクセスできます
 
 ### 4. ローカルでの確認
