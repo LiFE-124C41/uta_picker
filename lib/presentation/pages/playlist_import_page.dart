@@ -10,6 +10,7 @@ import '../../../domain/entities/video_item.dart';
 import '../../../domain/entities/playlist_item.dart';
 import '../../../domain/repositories/playlist_repository.dart';
 import '../../../core/services/analytics_service.dart';
+import '../../../core/utils/time_format.dart';
 
 class PlaylistImportPage extends StatefulWidget {
   final PlaylistRepository playlistRepository;
@@ -183,37 +184,6 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
     });
   }
 
-  /// '00:00'形式（分:秒）または'00:00:00'形式（時:分:秒）の文字列を秒数に変換
-  /// 例: "01:30" -> 90, "00:30" -> 30, "01:07:52" -> 4072
-  int? _parseTimeString(String timeStr) {
-    final parts = timeStr.split(':');
-
-    if (parts.length == 2) {
-      // 分:秒形式
-      final minutes = int.tryParse(parts[0]);
-      final seconds = int.tryParse(parts[1]);
-
-      if (minutes == null || seconds == null) return null;
-      if (seconds < 0 || seconds >= 60) return null;
-      if (minutes < 0) return null;
-
-      return minutes * 60 + seconds;
-    } else if (parts.length == 3) {
-      // 時:分:秒形式
-      final hours = int.tryParse(parts[0]);
-      final minutes = int.tryParse(parts[1]);
-      final seconds = int.tryParse(parts[2]);
-
-      if (hours == null || minutes == null || seconds == null) return null;
-      if (seconds < 0 || seconds >= 60) return null;
-      if (minutes < 0 || minutes >= 60) return null;
-      if (hours < 0) return null;
-
-      return hours * 3600 + minutes * 60 + seconds;
-    }
-
-    return null;
-  }
 
   /// 動画からプレイリストアイテムを作成するダイアログを表示
   Future<void> _showCreatePlaylistItemDialog(VideoItem video) async {
@@ -301,8 +271,8 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
         return;
       }
 
-      final startSec = _parseTimeString(startSecStr);
-      final endSec = _parseTimeString(endSecStr);
+      final startSec = TimeFormat.parseTimeString(startSecStr);
+      final endSec = TimeFormat.parseTimeString(endSecStr);
 
       if (startSec == null || endSec == null) {
         ScaffoldMessenger.of(context).showSnackBar(
