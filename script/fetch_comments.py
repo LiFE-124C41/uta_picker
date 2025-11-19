@@ -6,6 +6,10 @@ import re
 import json
 import time
 import html
+from googleapiclient.discovery import build
+import os
+import io
+from flask import Response
 
 def clean_html_text(text):
     """
@@ -167,9 +171,10 @@ def fetch_playlist_videos(api_key, playlist_id, max_results=50):
         print(f"Error fetching playlist videos: {e}")
         return []
 
-def process_comments_to_csv(api_key, playlist_id, output_file='comments.csv'):
+def process_comments_to_csv(api_key, playlist_id, output_file='comments.csv', return_csv_string=False):
     """
     プレイリスト内の動画のコメントからタイムスタンプと曲名を抽出し、CSVに出力
+    return_csv_string=True の場合、CSV文字列を返す（ファイルには書き込まない）
     """
     # プレイリストから動画を取得
     print(f"Fetching videos from playlist: {playlist_id}")
@@ -235,15 +240,71 @@ def process_comments_to_csv(api_key, playlist_id, output_file='comments.csv'):
         # APIレート制限を避けるため、少し待機
         time.sleep(0.1)
     
-    # CSVファイルに書き込み
+    # CSVを生成
     if csv_rows:
-        with open(output_file, 'w', encoding='utf-8', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=['video_title', 'song_title', 'video_id', 'start_sec', 'end_sec', 'link'])
+        fieldnames = ['video_title', 'song_title', 'video_id', 'start_sec', 'end_sec', 'link']
+        
+        if return_csv_string:
+            # メモリ内でCSV文字列を生成
+            output = io.StringIO()
+            writer = csv.DictWriter(output, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(csv_rows)
-        print(f"\nSaved {len(csv_rows)} entries to {output_file}")
+            csv_string = output.getvalue()
+            output.close()
+            print(f"\nGenerated {len(csv_rows)} entries as CSV string")
+            return csv_string
+        else:
+            # ファイルに書き込み
+            with open(output_file, 'w', encoding='utf-8', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(csv_rows)
+            print(f"\nSaved {len(csv_rows)} entries to {output_file}")
+            return None
     else:
         print("\nNo entries found to save.")
+        return "" if return_csv_string else None
+
+def comments(request):
+    """
+    Cloud Function用のエントリーポイント
+    CSVをレスポンスとして返す
+    """
+    api_key = os.getenv("YOUTUBE_API_KEY")
+    if not api_key:
+        return Response(
+            json.dumps({"error": "YOUTUBE_API_KEY environment variable is not set"}),
+            status=500,
+            mimetype='application/json'
+        )
+    
+    playlist_id = request.args.get("playlist_id")
+    if not playlist_id:
+        return Response(
+            json.dumps({"error": "playlist_id parameter is required"}),
+            status=400,
+            mimetype='application/json'
+        )
+    
+    try:
+        # CSV文字列を取得
+        csv_string = process_comments_to_csv(api_key, playlist_id, return_csv_string=True)
+        
+        # CSVをレスポンスとして返す
+        return Response(
+            csv_string,
+            mimetype='text/csv; charset=utf-8',
+            headers={
+                'Content-Disposition': 'attachment; filename=comments.csv'
+            }
+        )
+    except Exception as e:
+        return Response(
+            json.dumps({"error": str(e)}),
+            status=500,
+            mimetype='application/json'
+        )
 
 def main():
     if len(sys.argv) < 3:
