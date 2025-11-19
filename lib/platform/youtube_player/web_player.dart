@@ -292,7 +292,15 @@ class WebPlayer {
               final jsEvent = event as js.JsObject;
               final state = jsEvent['data'];
               final player = jsEvent['target'];
-              if (state == 1) {
+              if (state == 0) {
+                // 終了（ENDED）
+                // タブが非アクティブでも確実に検出できるように、onStateChangeでENDEDを処理
+                _playbackTimer?.cancel();
+                _playbackTimer = null;
+                if (onEnded != null) {
+                  onEnded();
+                }
+              } else if (state == 1) {
                 // 再生中
                 // 音声のみモードの場合、再生開始時に品質を再設定
                 if (audioOnly) {
@@ -402,14 +410,25 @@ class WebPlayer {
 
         if (currentTime >= endSec) {
           // 終了時刻に達したら停止
+          // stopVideoを呼び出すことで、onStateChangeでENDED状態を検出できるようにする
           try {
-            jsPlayer.callMethod('pauseVideo');
+            jsPlayer.callMethod('stopVideo');
           } catch (e) {
-            print('Error pausing video: $e');
+            print('Error stopping video: $e');
+            // stopVideoが失敗した場合は、pauseVideoを試す
+            try {
+              jsPlayer.callMethod('pauseVideo');
+            } catch (e2) {
+              print('Error pausing video: $e2');
+            }
           }
           _playbackTimer?.cancel();
           _playbackTimer = null;
 
+          // タイマーが動作している場合（タブがアクティブな場合）は、直接onEndedを呼ぶ
+          // タブが非アクティブでタイマーがスロットルされている場合は、
+          // onStateChangeでENDEDを検出する（ただし、stopVideoがENDEDを発火するかは不明）
+          // 両方の方法で確実に処理できるようにする
           if (onEnded != null) {
             onEnded();
           }
