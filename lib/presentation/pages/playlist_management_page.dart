@@ -6,13 +6,15 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../platform/stubs/io_stub.dart' if (dart.library.io) 'dart:io'
     as io_platform;
-import '../../../platform/stubs/html_stub.dart' if (dart.library.html) 'dart:html' as html show Blob, Url, AnchorElement;
+import '../../../platform/stubs/html_stub.dart'
+    if (dart.library.html) 'dart:html' as html show Blob, Url, AnchorElement;
 
 import '../../../domain/entities/playlist_item.dart';
 import '../../../domain/repositories/playlist_repository.dart';
 import '../../../core/utils/csv_export.dart';
 import '../../../core/utils/csv_import.dart';
 import '../../../core/utils/time_format.dart';
+import '../../../core/utils/youtube_url_parser.dart';
 import '../../../core/services/analytics_service.dart';
 
 class PlaylistManagementPage extends StatefulWidget {
@@ -52,7 +54,6 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
     return minutes * 60 + seconds;
   }
 
-
   Future<void> _loadPlaylist() async {
     final loadedPlaylist = await widget.playlistRepository.getPlaylist();
     setState(() {
@@ -86,10 +87,13 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
   }) async {
     final videoIdController = TextEditingController(text: initialVideoId ?? '');
     final startSecController = TextEditingController(
-        text:
-            initialStartSec != null ? TimeFormat.formatTimeString(initialStartSec) : '');
+        text: initialStartSec != null
+            ? TimeFormat.formatTimeString(initialStartSec)
+            : '');
     final endSecController = TextEditingController(
-        text: initialEndSec != null ? TimeFormat.formatTimeString(initialEndSec) : '');
+        text: initialEndSec != null
+            ? TimeFormat.formatTimeString(initialEndSec)
+            : '');
     final videoTitleController =
         TextEditingController(text: initialVideoTitle ?? '');
     final songTitleController =
@@ -107,8 +111,9 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
               TextField(
                 controller: videoIdController,
                 decoration: InputDecoration(
-                  labelText: '動画ID',
-                  hintText: '例: dQw4w9WgXcQ',
+                  labelText: '動画IDまたはURL',
+                  hintText:
+                      '例: dQw4w9WgXcQ または https://www.youtube.com/watch?v=dQw4w9WgXcQ',
                 ),
                 autofocus: true,
               ),
@@ -161,15 +166,24 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
     );
 
     if (result == true) {
-      final videoId = videoIdController.text.trim();
+      final videoIdInput = videoIdController.text.trim();
       final startSecStr = startSecController.text.trim();
       final endSecStr = endSecController.text.trim();
       final videoTitle = videoTitleController.text.trim();
       final songTitle = songTitleController.text.trim();
 
-      if (videoId.isEmpty || startSecStr.isEmpty || endSecStr.isEmpty) {
+      if (videoIdInput.isEmpty || startSecStr.isEmpty || endSecStr.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('動画ID、開始時刻、終了時刻は必須です')),
+        );
+        return;
+      }
+
+      // YouTubeのURLからvideoIdを抽出
+      final videoId = YoutubeUrlParser.extractVideoId(videoIdInput);
+      if (videoId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('有効な動画IDまたはYouTubeのURLを入力してください')),
         );
         return;
       }
@@ -234,7 +248,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
       final importedPlaylist = <PlaylistItem>[];
 
       for (final row in rows) {
-        final videoId = row['video_id'] ?? '';
+        final videoIdInput = row['video_id'] ?? '';
         final startSecStr = row['start_sec'] ?? '';
         final endSecStr = row['end_sec'] ?? '';
         final videoTitle =
@@ -242,8 +256,14 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
         final songTitle =
             row['song_title']?.isEmpty == true ? null : row['song_title'];
 
-        if (videoId.isEmpty || startSecStr.isEmpty || endSecStr.isEmpty) {
+        if (videoIdInput.isEmpty || startSecStr.isEmpty || endSecStr.isEmpty) {
           continue; // 必須フィールドが空の行はスキップ
+        }
+
+        // YouTubeのURLからvideoIdを抽出
+        final videoId = YoutubeUrlParser.extractVideoId(videoIdInput);
+        if (videoId == null) {
+          continue; // 有効なvideoIdが抽出できない行はスキップ
         }
 
         final startSec = int.tryParse(startSecStr);
