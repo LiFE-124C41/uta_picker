@@ -12,6 +12,10 @@ on:
           - patch
           - minor
           - major
+  pull_request:
+    types: [closed]
+    branches:
+      - main
 
 permissions:
   contents: write  # タグとリリースを作成するため
@@ -26,14 +30,23 @@ jobs:
   release:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.version.outputs.new_version }}
+      version: ${{ steps.version.outputs.new_version || steps.get_version.outputs.version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # 全履歴を取得（タグ作成のため）
 
+      - name: Get version from pubspec (for PR)
+        if: github.event_name == 'pull_request'
+        id: get_version
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version from pubspec.yaml: $VERSION"
+
       - name: Get current version
+        if: github.event_name == 'workflow_dispatch'
         id: current_version
         run: |
           VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //')
@@ -41,6 +54,7 @@ jobs:
           echo "Current version: $VERSION"
 
       - name: Increment version
+        if: github.event_name == 'workflow_dispatch'
         id: version
         run: |
           CURRENT_VERSION="${{ steps.current_version.outputs.current_version }}"
@@ -76,25 +90,59 @@ jobs:
           sed -i "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
 
       - name: Configure Git
+        if: github.event_name == 'workflow_dispatch'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
 
+      - name: Create release branch
+        if: github.event_name == 'workflow_dispatch'
+        id: branch
+        run: |
+          BRANCH_NAME="release/v${{ steps.version.outputs.new_version }}"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          git checkout -b "$BRANCH_NAME"
+          echo "Created branch: $BRANCH_NAME"
+
       - name: Commit version bump
+        if: github.event_name == 'workflow_dispatch'
         run: |
           git add pubspec.yaml
           git commit -m "Bump version to ${{ steps.version.outputs.new_version }}" || exit 0
 
       - name: Create tag
+        if: github.event_name == 'workflow_dispatch'
         run: |
           git tag -a "v${{ steps.version.outputs.new_version }}" -m "Release v${{ steps.version.outputs.new_version }}"
 
-      - name: Push changes and tag
+      - name: Push release branch and tag
+        if: github.event_name == 'workflow_dispatch'
         run: |
-          git push origin HEAD:$(git branch --show-current)
+          git push origin "${{ steps.branch.outputs.branch_name }}"
           git push origin "v${{ steps.version.outputs.new_version }}"
 
+      - name: Create Pull Request
+        if: github.event_name == 'workflow_dispatch'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ steps.branch.outputs.branch_name }}
+          base: main
+          title: "Release v${{ steps.version.outputs.new_version }}"
+          body: |
+            ## バージョン更新: v${{ steps.version.outputs.new_version }}
+            
+            このPRは自動的に作成されました。
+            
+            - バージョン: ${{ steps.current_version.outputs.current_version }} → ${{ steps.version.outputs.new_version }}
+            - インクリメントタイプ: ${{ github.event.inputs.version_type || 'patch' }}
+            
+            **注意**: このPRをマージすると、ビルドとデプロイが自動的に実行されます。
+          delete-branch: true
+          draft: false
+
       - name: Create GitHub Release
+        if: github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.version.outputs.new_version }}
@@ -108,10 +156,15 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    needs: release
+    if: |
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true) ||
+      (github.event_name == 'workflow_dispatch' && needs.release.result == 'success')
+    needs: [release]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.merge_commit_sha || github.ref }}
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
