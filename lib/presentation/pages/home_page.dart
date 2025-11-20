@@ -19,6 +19,7 @@ import '../../../platform/youtube_player/desktop_player.dart';
 import '../../../core/utils/csv_export.dart';
 import '../../../core/utils/time_format.dart';
 import '../../../core/services/analytics_service.dart';
+import '../widgets/youtube_list_download_dialog.dart';
 
 class HomePage extends StatefulWidget {
   final PlaylistRepository playlistRepository;
@@ -508,7 +509,8 @@ class _HomePageState extends State<HomePage> {
                   _audioOnlyMode = !_audioOnlyMode;
                 });
                 // アナリティクス: 音声のみモード切り替え
-                AnalyticsService.logAudioOnlyModeToggled(enabled: _audioOnlyMode);
+                AnalyticsService.logAudioOnlyModeToggled(
+                    enabled: _audioOnlyMode);
                 // 再生中の場合は再作成
                 if (_isPlaying && _currentVideoId != null) {
                   // 現在の再生位置を取得して再作成
@@ -542,6 +544,12 @@ class _HomePageState extends State<HomePage> {
               },
               tooltip: 'JSONからプレイリストを作成',
             ),
+          if (_isDeveloperModeEnabled)
+            IconButton(
+              icon: Icon(Icons.download),
+              onPressed: _showYoutubeListDownloadDialog,
+              tooltip: 'YouTubeリストからCSVをダウンロード',
+            ),
         ],
       ),
       body: Row(children: [left, Expanded(child: right)]),
@@ -560,7 +568,6 @@ class _HomePageState extends State<HomePage> {
 
     return _webPlayer.buildIframeWidget(_currentVideoId!);
   }
-
 
   /// 動画からプレイリストアイテムを作成するダイアログを表示
   Future<void> _showCreatePlaylistItemDialog(VideoItem video) async {
@@ -706,5 +713,16 @@ class _HomePageState extends State<HomePage> {
         _webPlayer.enablePointerEvents();
       }
     }
+  }
+
+  /// YouTubeリストIDを指定してCSVをダウンロードするダイアログを表示
+  Future<void> _showYoutubeListDownloadDialog() async {
+    await showYoutubeListDownloadDialog(
+      context,
+      onDownload: (playlistId) =>
+          downloadCsvFromYoutubeList(context, playlistId),
+      onDisablePointerEvents: kIsWeb ? _webPlayer.disablePointerEvents : null,
+      onEnablePointerEvents: kIsWeb ? _webPlayer.enablePointerEvents : null,
+    );
   }
 }
