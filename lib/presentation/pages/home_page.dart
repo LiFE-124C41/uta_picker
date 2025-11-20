@@ -47,6 +47,7 @@ class _HomePageState extends State<HomePage> {
   Timer? _developerModeTapTimer;
   bool _audioOnlyMode = false;
   String? _appVersion;
+  int _repeatMode = 0; // 0: なし, 1: 1曲リピート, 2: 全曲リピート
 
   late WebPlayer _webPlayer;
   late DesktopPlayer _desktopPlayer;
@@ -144,7 +145,13 @@ class _HomePageState extends State<HomePage> {
             _isPlaying = false;
           });
           if (isPlayingPlaylist && currentPlaylistIndex != null) {
-            _playNextPlaylistItem();
+            // 1曲リピートモードの場合は同じ曲を再度再生
+            if (_repeatMode == 1) {
+              final item = playlist[currentPlaylistIndex!];
+              _playTimeRange(item.videoId, item.startSec, item.endSec);
+            } else {
+              _playNextPlaylistItem();
+            }
           } else {
             setState(() {
               isPlayingPlaylist = false;
@@ -176,10 +183,21 @@ class _HomePageState extends State<HomePage> {
 
     final nextIndex = currentPlaylistIndex! + 1;
     if (nextIndex >= playlist.length) {
-      setState(() {
-        isPlayingPlaylist = false;
-        currentPlaylistIndex = null;
-      });
+      // プレイリストの最後に到達した場合
+      if (_repeatMode == 2) {
+        // 全曲リピート: 最初に戻る
+        setState(() {
+          currentPlaylistIndex = 0;
+        });
+        final item = playlist[0];
+        _playTimeRange(item.videoId, item.startSec, item.endSec);
+      } else {
+        // リピートなし: 停止
+        setState(() {
+          isPlayingPlaylist = false;
+          currentPlaylistIndex = null;
+        });
+      }
       return;
     }
 
@@ -317,6 +335,37 @@ class _HomePageState extends State<HomePage> {
                         onPressed:
                             isPlayingPlaylist ? _stopPlaylist : _playPlaylist,
                         tooltip: isPlayingPlaylist ? '停止' : '再生',
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          _repeatMode == 0
+                              ? Icons.repeat
+                              : _repeatMode == 1
+                                  ? Icons.repeat_one
+                                  : Icons.repeat,
+                          color: _repeatMode > 0 ? Colors.blue : null,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _repeatMode = (_repeatMode + 1) % 3;
+                          });
+                          final modeText = _repeatMode == 0
+                              ? 'リピートなし'
+                              : _repeatMode == 1
+                                  ? '1曲リピート'
+                                  : '全曲リピート';
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(modeText),
+                              duration: Duration(seconds: 1),
+                            ),
+                          );
+                        },
+                        tooltip: _repeatMode == 0
+                            ? 'リピートなし'
+                            : _repeatMode == 1
+                                ? '1曲リピート'
+                                : '全曲リピート',
                       ),
                       if (isPlayingPlaylist && currentPlaylistIndex != null)
                         Padding(
