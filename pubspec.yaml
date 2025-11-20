@@ -1,6 +1,6 @@
 name: uta_picker
 description: A simple tool to mark start/end times of songs in YouTube archives
-version: 0.2.0
+version: 0.3.0
 environment:
   sdk: ">=3.0.0 <4.0.0"
 
