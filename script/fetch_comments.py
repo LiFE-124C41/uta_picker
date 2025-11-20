@@ -271,12 +271,29 @@ def comments(request):
     Cloud Function用のエントリーポイント
     CSVをレスポンスとして返す
     """
+    # CORSヘッダーを定義
+    cors_headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Max-Age': '3600'
+    }
+    
+    # OPTIONSリクエスト（プリフライト）への対応
+    if request.method == 'OPTIONS':
+        return Response(
+            '',
+            status=204,
+            headers=cors_headers
+        )
+    
     api_key = os.getenv("YOUTUBE_API_KEY")
     if not api_key:
         return Response(
             json.dumps({"error": "YOUTUBE_API_KEY environment variable is not set"}),
             status=500,
-            mimetype='application/json'
+            mimetype='application/json',
+            headers=cors_headers
         )
     
     playlist_id = request.args.get("playlist_id")
@@ -284,26 +301,31 @@ def comments(request):
         return Response(
             json.dumps({"error": "playlist_id parameter is required"}),
             status=400,
-            mimetype='application/json'
+            mimetype='application/json',
+            headers=cors_headers
         )
     
     try:
         # CSV文字列を取得
         csv_string = process_comments_to_csv(api_key, playlist_id, return_csv_string=True)
         
-        # CSVをレスポンスとして返す
+        # CSVをレスポンスとして返す（CORSヘッダーを追加）
+        headers = {
+            'Content-Disposition': 'attachment; filename=comments.csv'
+        }
+        headers.update(cors_headers)
+        
         return Response(
             csv_string,
             mimetype='text/csv; charset=utf-8',
-            headers={
-                'Content-Disposition': 'attachment; filename=comments.csv'
-            }
+            headers=headers
         )
     except Exception as e:
         return Response(
             json.dumps({"error": str(e)}),
             status=500,
-            mimetype='application/json'
+            mimetype='application/json',
+            headers=cors_headers
         )
 
 def main():

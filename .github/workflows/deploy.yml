@@ -178,6 +178,50 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Generate api_config.dart
+        run: |
+          if [ -z "${{ secrets.API_ENDPOINT_BASE64 }}" ]; then
+            echo "Error: API_ENDPOINT_BASE64 secret is not set"
+            exit 1
+          fi
+          cat > lib/core/config/api_config.dart << 'API_EOF'
+          // lib/core/config/api_config.dart
+          // File generated automatically during CI/CD build
+          // Do not commit sensitive values - use GitHub Secrets instead
+
+          import 'dart:convert';
+
+          /// API設定
+          /// エンドポイントURLをBase64エンコードして保存
+          /// CI/CDビルド時にGitHub Secretsから値を取得して生成されます
+          class ApiConfig {
+            // エンコードされたエンドポイントURL
+            // この値はCI/CDビルド時にGitHub Secretsから注入されます
+            static const String _encodedEndpoint = '${{ secrets.API_ENDPOINT_BASE64 }}';
+
+            /// エンドポイントURLを取得
+            static String get endpoint {
+              if (_encodedEndpoint.isEmpty) {
+                throw StateError(
+                  'API endpoint is not configured. '
+                  'This should be set during CI/CD build from GitHub Secrets.',
+                );
+              }
+              
+              try {
+                // Base64デコード
+                final bytes = base64Decode(_encodedEndpoint);
+                return utf8.decode(bytes);
+              } catch (e) {
+                throw StateError(
+                  'Failed to decode API endpoint: $e. '
+                  'Please check the API_ENDPOINT_BASE64 secret value.',
+                );
+              }
+            }
+          }
+          API_EOF
+
       - name: Generate firebase_options.dart
         run: |
           cat > lib/firebase_options.dart << 'EOF'
