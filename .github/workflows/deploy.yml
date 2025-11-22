@@ -98,6 +98,12 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
 
+      - name: Ensure on main branch
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git checkout main
+          git pull origin main
+
       - name: Create release branch
         if: github.event_name == 'workflow_dispatch'
         id: branch
@@ -126,23 +132,22 @@ jobs:
 
       - name: Create Pull Request
         if: github.event_name == 'workflow_dispatch'
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ steps.branch.outputs.branch_name }}
-          base: main
-          title: "Release v${{ steps.version.outputs.new_version }}"
-          body: |
-            ## バージョン更新: v${{ steps.version.outputs.new_version }}
-            
-            このPRは自動的に作成されました。
-            
-            - バージョン: ${{ steps.current_version.outputs.current_version }} → ${{ steps.version.outputs.new_version }}
-            - インクリメントタイプ: ${{ github.event.inputs.version_type || 'patch' }}
-            
-            **注意**: このPRをマージすると、ビルドとデプロイが自動的に実行されます。
-          delete-branch: true
-          draft: false
+        run: |
+          gh pr create \
+            --base main \
+            --head "${{ steps.branch.outputs.branch_name }}" \
+            --title "Release v${{ steps.version.outputs.new_version }}" \
+            --body "## バージョン更新: v${{ steps.version.outputs.new_version }}
+          
+          このPRは自動的に作成されました。
+          
+          - バージョン: ${{ steps.current_version.outputs.current_version }} → ${{ steps.version.outputs.new_version }}
+          - インクリメントタイプ: ${{ github.event.inputs.version_type || 'patch' }}
+          
+          **注意**: このPRをマージすると、ビルドとデプロイが自動的に実行されます。" \
+            || echo "PR creation failed or PR already exists"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
         if: github.event_name == 'workflow_dispatch'
