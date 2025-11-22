@@ -1,5 +1,6 @@
 // lib/presentation/pages/home_page.dart
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
@@ -48,6 +49,8 @@ class _HomePageState extends State<HomePage> {
   bool _audioOnlyMode = false;
   String? _appVersion;
   int _repeatMode = 0; // 0: なし, 1: 1曲リピート, 2: 全曲リピート
+  bool _shuffleMode = false;
+  List<int>? _shuffledIndices; // シャッフルされたインデックスの順序
 
   late WebPlayer _webPlayer;
   late DesktopPlayer _desktopPlayer;
@@ -181,24 +184,62 @@ class _HomePageState extends State<HomePage> {
   void _playNextPlaylistItem() {
     if (currentPlaylistIndex == null || playlist.isEmpty) return;
 
-    final nextIndex = currentPlaylistIndex! + 1;
-    if (nextIndex >= playlist.length) {
-      // プレイリストの最後に到達した場合
-      if (_repeatMode == 2) {
-        // 全曲リピート: 最初に戻る
-        setState(() {
-          currentPlaylistIndex = 0;
-        });
-        final item = playlist[0];
-        _playTimeRange(item.videoId, item.startSec, item.endSec);
-      } else {
-        // リピートなし: 停止
+    int nextIndex;
+    if (_shuffleMode && _shuffledIndices != null) {
+      // シャッフルモード: シャッフルされた順序を使用
+      final currentShuffledPosition =
+          _shuffledIndices!.indexOf(currentPlaylistIndex!);
+      if (currentShuffledPosition == -1) {
+        // 現在のインデックスがシャッフルリストにない場合（通常は発生しない）
         setState(() {
           isPlayingPlaylist = false;
           currentPlaylistIndex = null;
         });
+        return;
       }
-      return;
+
+      final nextShuffledPosition = currentShuffledPosition + 1;
+      if (nextShuffledPosition >= _shuffledIndices!.length) {
+        // シャッフルリストの最後に到達した場合
+        if (_repeatMode == 2) {
+          // 全曲リピート: シャッフルを再生成して最初から
+          _shufflePlaylist();
+          setState(() {
+            currentPlaylistIndex = _shuffledIndices![0];
+          });
+          final item = playlist[_shuffledIndices![0]];
+          _playTimeRange(item.videoId, item.startSec, item.endSec);
+        } else {
+          // リピートなし: 停止
+          setState(() {
+            isPlayingPlaylist = false;
+            currentPlaylistIndex = null;
+          });
+        }
+        return;
+      }
+      nextIndex = _shuffledIndices![nextShuffledPosition];
+    } else {
+      // 通常モード: 順番通り
+      nextIndex = currentPlaylistIndex! + 1;
+      if (nextIndex >= playlist.length) {
+        // プレイリストの最後に到達した場合
+        if (_repeatMode == 2) {
+          // 全曲リピート: 最初に戻る
+          setState(() {
+            currentPlaylistIndex = 0;
+          });
+          final item = playlist[0];
+          _playTimeRange(item.videoId, item.startSec, item.endSec);
+        } else {
+          // リピートなし: 停止
+          setState(() {
+            isPlayingPlaylist = false;
+            currentPlaylistIndex = null;
+          });
+        }
+        return;
+      }
     }
 
     setState(() {
@@ -247,6 +288,14 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void _shufflePlaylist() {
+    if (playlist.isEmpty) return;
+
+    final indices = List.generate(playlist.length, (i) => i);
+    indices.shuffle(Random());
+    _shuffledIndices = indices;
+  }
+
   void _playPlaylist() {
     if (playlist.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -258,12 +307,22 @@ class _HomePageState extends State<HomePage> {
     // アナリティクス: プレイリスト再生
     AnalyticsService.logPlaylistPlayed(itemCount: playlist.length);
 
+    // シャッフルモードが有効な場合、インデックスをシャッフル
+    if (_shuffleMode) {
+      _shufflePlaylist();
+    } else {
+      _shuffledIndices = null;
+    }
+
+    final startIndex =
+        _shuffleMode && _shuffledIndices != null ? _shuffledIndices![0] : 0;
+
     setState(() {
       isPlayingPlaylist = true;
-      currentPlaylistIndex = 0;
+      currentPlaylistIndex = startIndex;
     });
 
-    final item = playlist[0];
+    final item = playlist[startIndex];
     _playTimeRange(item.videoId, item.startSec, item.endSec);
   }
 
@@ -275,6 +334,7 @@ class _HomePageState extends State<HomePage> {
       _isPlaying = false;
       isPlayingPlaylist = false;
       currentPlaylistIndex = null;
+      _shuffledIndices = null;
     });
   }
 
@@ -323,69 +383,88 @@ class _HomePageState extends State<HomePage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('プレイリスト', style: TextStyle(fontSize: 18)),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (playlist.isNotEmpty) ...[
-                      IconButton(
-                        icon: Icon(
-                          isPlayingPlaylist ? Icons.stop : Icons.play_arrow,
-                        ),
-                        onPressed:
-                            isPlayingPlaylist ? _stopPlaylist : _playPlaylist,
-                        tooltip: isPlayingPlaylist ? '停止' : '再生',
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          _repeatMode == 0
-                              ? Icons.repeat
-                              : _repeatMode == 1
-                                  ? Icons.repeat_one
-                                  : Icons.repeat,
-                          color: _repeatMode > 0 ? Colors.blue : null,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _repeatMode = (_repeatMode + 1) % 3;
-                          });
-                          final modeText = _repeatMode == 0
-                              ? 'リピートなし'
-                              : _repeatMode == 1
-                                  ? '1曲リピート'
-                                  : '全曲リピート';
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(modeText),
-                              duration: Duration(seconds: 1),
+                Flexible(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (playlist.isNotEmpty) ...[
+                          IconButton(
+                            icon: Icon(
+                              isPlayingPlaylist ? Icons.stop : Icons.play_arrow,
                             ),
-                          );
-                        },
-                        tooltip: _repeatMode == 0
-                            ? 'リピートなし'
-                            : _repeatMode == 1
-                                ? '1曲リピート'
-                                : '全曲リピート',
-                      ),
-                      if (isPlayingPlaylist && currentPlaylistIndex != null)
-                        Padding(
-                          padding: EdgeInsets.only(right: 8),
-                          child: Text(
-                            '${currentPlaylistIndex! + 1} / ${playlist.length}',
-                            style: TextStyle(fontSize: 12),
+                            onPressed: isPlayingPlaylist
+                                ? _stopPlaylist
+                                : _playPlaylist,
+                            tooltip: isPlayingPlaylist ? '停止' : '再生',
+                            constraints: BoxConstraints(),
+                            padding: EdgeInsets.all(8),
                           ),
-                        ),
-                    ],
-                    IconButton(
-                      icon: Icon(Icons.settings),
-                      onPressed: () async {
-                        await Navigator.pushNamed(
-                            context, '/playlist-management');
-                        await _loadPlaylist();
-                      },
-                      tooltip: 'プレイリスト管理',
+                          IconButton(
+                            icon: Icon(
+                              _repeatMode == 0
+                                  ? Icons.repeat
+                                  : _repeatMode == 1
+                                      ? Icons.repeat_one
+                                      : Icons.repeat,
+                              color: _repeatMode > 0 ? Colors.blue : null,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _repeatMode = (_repeatMode + 1) % 3;
+                              });
+                            },
+                            tooltip: _repeatMode == 0
+                                ? 'リピートなし'
+                                : _repeatMode == 1
+                                    ? '1曲リピート'
+                                    : '全曲リピート',
+                            constraints: BoxConstraints(),
+                            padding: EdgeInsets.all(8),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.shuffle,
+                              color: _shuffleMode ? Colors.blue : null,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _shuffleMode = !_shuffleMode;
+                                if (!_shuffleMode) {
+                                  _shuffledIndices = null;
+                                }
+                              });
+                            },
+                            tooltip:
+                                _shuffleMode ? 'シャッフル再生: オン' : 'シャッフル再生: オフ',
+                            constraints: BoxConstraints(),
+                            padding: EdgeInsets.all(8),
+                          ),
+                          if (isPlayingPlaylist && currentPlaylistIndex != null)
+                            Padding(
+                              padding: EdgeInsets.only(right: 8),
+                              child: Text(
+                                _shuffleMode && _shuffledIndices != null
+                                    ? '${_shuffledIndices!.indexOf(currentPlaylistIndex!) + 1} / ${playlist.length} (シャッフル)'
+                                    : '${currentPlaylistIndex! + 1} / ${playlist.length}',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
+                        ],
+                      ],
                     ),
-                  ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.settings),
+                  onPressed: () async {
+                    await Navigator.pushNamed(context, '/playlist-management');
+                    await _loadPlaylist();
+                  },
+                  tooltip: 'プレイリスト管理',
+                  constraints: BoxConstraints(),
+                  padding: EdgeInsets.all(8),
                 ),
               ],
             ),
@@ -423,6 +502,10 @@ class _HomePageState extends State<HomePage> {
                         size: 20,
                       ),
                       onPressed: () {
+                        // シャッフルモードが有効な場合、新しいシャッフル順序を生成
+                        if (_shuffleMode) {
+                          _shufflePlaylist();
+                        }
                         setState(() {
                           isPlayingPlaylist = true;
                           currentPlaylistIndex = idx;
@@ -433,6 +516,10 @@ class _HomePageState extends State<HomePage> {
                       tooltip: isCurrent ? '再生中' : '再生',
                     ),
                     onTap: () {
+                      // シャッフルモードが有効な場合、新しいシャッフル順序を生成
+                      if (_shuffleMode) {
+                        _shufflePlaylist();
+                      }
                       setState(() {
                         isPlayingPlaylist = true;
                         currentPlaylistIndex = idx;
