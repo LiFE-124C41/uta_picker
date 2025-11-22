@@ -84,151 +84,182 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
         TextEditingController(text: initialSongTitle ?? '');
 
     final isEdit = index != null;
-    final result = await showDialog<bool>(
+    String? errorMessage;
+
+    await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isEdit ? 'プレイリスト項目を編集' : 'プレイリストに追加'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: videoIdController,
-                decoration: InputDecoration(
-                  labelText: '動画IDまたはURL',
-                  hintText: '例: dQw4w9WgXcQ または 動画URL',
-                ),
-                autofocus: true,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text(isEdit ? 'プレイリスト項目を編集' : 'プレイリストに追加'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (errorMessage != null) ...[
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      margin: EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: Colors.red.shade300),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline,
+                              color: Colors.red.shade700, size: 20),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              errorMessage!,
+                              style: TextStyle(
+                                  color: Colors.red.shade700, fontSize: 14),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  TextField(
+                    controller: videoIdController,
+                    decoration: InputDecoration(
+                      labelText: '動画IDまたはURL',
+                      hintText: '例: dQw4w9WgXcQ または 動画URL',
+                    ),
+                    autofocus: true,
+                  ),
+                  SizedBox(height: 8),
+                  TextField(
+                    controller: startSecController,
+                    decoration: InputDecoration(
+                      labelText: '開始時刻（オプション、分:秒 または 時:分:秒）',
+                      hintText: '例: 00:30 または 01:07:52（空欄の場合は動画の最初から）',
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  TextField(
+                    controller: endSecController,
+                    decoration: InputDecoration(
+                      labelText: '終了時刻（オプション、分:秒 または 時:分:秒）',
+                      hintText: '例: 01:30 または 01:10:00（空欄の場合は動画の最後まで）',
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  TextField(
+                    controller: videoTitleController,
+                    decoration: InputDecoration(
+                      labelText: '動画タイトル（オプション）',
+                      hintText: '例: YouTube動画のタイトル',
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  TextField(
+                    controller: songTitleController,
+                    decoration: InputDecoration(
+                      labelText: '楽曲タイトル（オプション）',
+                      hintText: '例: 曲名',
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(height: 8),
-              TextField(
-                controller: startSecController,
-                decoration: InputDecoration(
-                  labelText: '開始時刻（オプション、分:秒 または 時:分:秒）',
-                  hintText: '例: 00:30 または 01:07:52（空欄の場合は動画の最初から）',
-                ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: Text('キャンセル'),
               ),
-              SizedBox(height: 8),
-              TextField(
-                controller: endSecController,
-                decoration: InputDecoration(
-                  labelText: '終了時刻（オプション、分:秒 または 時:分:秒）',
-                  hintText: '例: 01:30 または 01:10:00（空欄の場合は動画の最後まで）',
-                ),
-              ),
-              SizedBox(height: 8),
-              TextField(
-                controller: videoTitleController,
-                decoration: InputDecoration(
-                  labelText: '動画タイトル（オプション）',
-                  hintText: '例: YouTube動画のタイトル',
-                ),
-              ),
-              SizedBox(height: 8),
-              TextField(
-                controller: songTitleController,
-                decoration: InputDecoration(
-                  labelText: '楽曲タイトル（オプション）',
-                  hintText: '例: 曲名',
-                ),
+              TextButton(
+                onPressed: () async {
+                  final videoIdInput = videoIdController.text.trim();
+                  final startSecStr = startSecController.text.trim();
+                  final endSecStr = endSecController.text.trim();
+                  final videoTitle = videoTitleController.text.trim();
+                  final songTitle = songTitleController.text.trim();
+
+                  // バリデーション
+                  String? validationError;
+
+                  if (videoIdInput.isEmpty) {
+                    validationError = '動画IDは必須です';
+                  } else {
+                    // YouTubeのURLからvideoIdを抽出
+                    final videoId =
+                        YoutubeUrlParser.extractVideoId(videoIdInput);
+                    if (videoId == null) {
+                      validationError = '有効な動画IDまたはYouTubeのURLを入力してください';
+                    } else {
+                      int? startSec;
+                      int? endSec;
+
+                      // 開始時刻の解析（空欄の場合はnull）
+                      if (startSecStr.isNotEmpty) {
+                        startSec = TimeFormat.parseTimeString(startSecStr);
+                        if (startSec == null) {
+                          validationError =
+                              '開始時刻は「分:秒」（例: 00:30）または「時:分:秒」（例: 01:07:52）形式で入力してください';
+                        }
+                      }
+
+                      // 終了時刻の解析（空欄の場合はnull）
+                      if (validationError == null && endSecStr.isNotEmpty) {
+                        endSec = TimeFormat.parseTimeString(endSecStr);
+                        if (endSec == null) {
+                          validationError =
+                              '終了時刻は「分:秒」（例: 01:30）または「時:分:秒」（例: 01:10:00）形式で入力してください';
+                        }
+                      }
+
+                      // 両方指定されている場合は、開始時刻 < 終了時刻をチェック
+                      if (validationError == null &&
+                          startSec != null &&
+                          endSec != null &&
+                          startSec >= endSec) {
+                        validationError = '終了時刻は開始時刻より大きくしてください';
+                      }
+
+                      // バリデーション成功時はダイアログを閉じて処理を続行
+                      if (validationError == null) {
+                        final item = PlaylistItem(
+                          videoId: videoId,
+                          startSec: startSec,
+                          endSec: endSec,
+                          videoTitle: videoTitle.isEmpty ? null : videoTitle,
+                          songTitle: songTitle.isEmpty ? null : songTitle,
+                        );
+
+                        if (isEdit) {
+                          // ignore: unnecessary_non_null_assertion
+                          await widget.playlistRepository
+                              .updatePlaylistItem(index!, item);
+                        } else {
+                          await widget.playlistRepository.addPlaylistItem(item);
+                          // アナリティクス: プレイリストアイテム追加（管理画面から）
+                          AnalyticsService.logPlaylistItemAdded(
+                            videoId: item.videoId,
+                            startSec: item.startSec,
+                            endSec: item.endSec,
+                          );
+                        }
+                        await _loadPlaylist();
+                        Navigator.pop(dialogContext, true);
+                        return;
+                      }
+                    }
+                  }
+
+                  // エラーがある場合はダイアログを閉じずにエラーメッセージを表示
+                  setState(() {
+                    errorMessage = validationError;
+                  });
+                },
+                child: Text(isEdit ? '更新' : '追加'),
               ),
             ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(isEdit ? '更新' : '追加'),
-          ),
-        ],
+          );
+        },
       ),
     );
-
-    if (result == true) {
-      final videoIdInput = videoIdController.text.trim();
-      final startSecStr = startSecController.text.trim();
-      final endSecStr = endSecController.text.trim();
-      final videoTitle = videoTitleController.text.trim();
-      final songTitle = songTitleController.text.trim();
-
-      if (videoIdInput.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('動画IDは必須です')),
-        );
-        return;
-      }
-
-      // YouTubeのURLからvideoIdを抽出
-      final videoId = YoutubeUrlParser.extractVideoId(videoIdInput);
-      if (videoId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('有効な動画IDまたはYouTubeのURLを入力してください')),
-        );
-        return;
-      }
-
-      int? startSec;
-      int? endSec;
-
-      // 開始時刻の解析（空欄の場合はnull）
-      if (startSecStr.isNotEmpty) {
-        startSec = TimeFormat.parseTimeString(startSecStr);
-        if (startSec == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(
-                    '開始時刻は「分:秒」（例: 00:30）または「時:分:秒」（例: 01:07:52）形式で入力してください')),
-          );
-          return;
-        }
-      }
-
-      // 終了時刻の解析（空欄の場合はnull）
-      if (endSecStr.isNotEmpty) {
-        endSec = TimeFormat.parseTimeString(endSecStr);
-        if (endSec == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(
-                    '終了時刻は「分:秒」（例: 01:30）または「時:分:秒」（例: 01:10:00）形式で入力してください')),
-          );
-          return;
-        }
-      }
-
-      // 両方指定されている場合は、開始時刻 < 終了時刻をチェック
-      if (startSec != null && endSec != null && startSec >= endSec) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('終了時刻は開始時刻より大きくしてください')),
-        );
-        return;
-      }
-
-      final item = PlaylistItem(
-        videoId: videoId,
-        startSec: startSec,
-        endSec: endSec,
-        videoTitle: videoTitle.isEmpty ? null : videoTitle,
-        songTitle: songTitle.isEmpty ? null : songTitle,
-      );
-
-      if (isEdit) {
-        await widget.playlistRepository.updatePlaylistItem(index, item);
-      } else {
-        await widget.playlistRepository.addPlaylistItem(item);
-        // アナリティクス: プレイリストアイテム追加（管理画面から）
-        AnalyticsService.logPlaylistItemAdded(
-          videoId: item.videoId,
-          startSec: item.startSec,
-          endSec: item.endSec,
-        );
-      }
-      await _loadPlaylist();
-    }
   }
 
   Future<void> _importPlaylistCsv() async {
