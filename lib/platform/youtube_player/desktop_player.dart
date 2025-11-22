@@ -28,7 +28,10 @@ class DesktopPlayer {
     }
   }
   
-  String playerHtmlWithTimeRange(String videoId, int startSec, int endSec) {
+  String playerHtmlWithTimeRange(String videoId, int? startSec, int? endSec) {
+    final endSecStr = endSec != null ? endSec.toString() : 'Number.MAX_SAFE_INTEGER';
+    final startParam = startSec != null ? "'start': $startSec," : '';
+    final seekToCall = startSec != null ? 'player.seekTo($startSec, true);' : '';
     return '''
     <!DOCTYPE html>
     <html>
@@ -39,13 +42,13 @@ class DesktopPlayer {
         tag.src = "https://www.youtube.com/iframe_api";
         document.body.appendChild(tag);
         var player;
-        var endSec = $endSec;
+        var endSec = $endSecStr;
         function onYouTubeIframeAPIReady() {
           player = new YT.Player('player', {
             height: '100%',
             width: '100%',
             videoId: '$videoId',
-            playerVars: { 'playsinline': 1, 'rel': 0, 'start': $startSec },
+            playerVars: { 'playsinline': 1, 'rel': 0, $startParam },
             events: { 
               'onReady': onPlayerReady,
               'onStateChange': onStateChange
@@ -53,7 +56,7 @@ class DesktopPlayer {
           });
         }
         function onPlayerReady(event) {
-          player.seekTo($startSec, true);
+          $seekToCall
           player.playVideo();
           monitorTime();
         }
@@ -68,7 +71,7 @@ class DesktopPlayer {
               if(player && player.getCurrentTime){
                 var t = player.getCurrentTime();
                 TimeChannel.postMessage(String(t));
-                if(t >= endSec) {
+                if(endSec !== Number.MAX_SAFE_INTEGER && t >= endSec) {
                   player.pauseVideo();
                   clearInterval(interval);
                 }
@@ -134,7 +137,7 @@ class DesktopPlayer {
     _webController.loadRequest(url);
   }
   
-  void playTimeRange(String videoId, int startSec, int endSec) {
+  void playTimeRange(String videoId, int? startSec, int? endSec) {
     if (kIsWeb || _webController == null) return;
     final htmlStr = playerHtmlWithTimeRange(videoId, startSec, endSec);
     final url = Uri.dataFromString(htmlStr,

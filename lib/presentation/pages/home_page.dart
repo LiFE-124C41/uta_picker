@@ -114,7 +114,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _playTimeRange(String videoId, int startSec, int endSec) {
+  void _playTimeRange(String videoId, int? startSec, int? endSec) {
     if (kIsWeb) {
       _playTimeRangeWeb(videoId, startSec, endSec);
     } else {
@@ -122,7 +122,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _playTimeRangeWeb(String videoId, int startSec, int endSec) {
+  void _playTimeRangeWeb(String videoId, int? startSec, int? endSec) {
     if (!kIsWeb) return;
 
     _webPlayer.prepareDisplayDiv();
@@ -167,7 +167,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _playTimeRangeDesktop(String videoId, int startSec, int endSec) {
+  void _playTimeRangeDesktop(String videoId, int? startSec, int? endSec) {
     if (kIsWeb) return;
     _desktopPlayer.playTimeRange(videoId, startSec, endSec);
 
@@ -264,9 +264,11 @@ class _HomePageState extends State<HomePage> {
     final sb = StringBuffer();
     sb.writeln('video_title,song_title,video_id,start_sec,end_sec,link');
     for (var item in playlist) {
-      final link = 'https://youtu.be/${item.videoId}?t=${item.startSec}';
+      final link = item.startSec != null
+          ? 'https://youtu.be/${item.videoId}?t=${item.startSec}'
+          : 'https://youtu.be/${item.videoId}';
       sb.writeln(
-          '${CsvExport.escape(item.videoTitle ?? '')},${CsvExport.escape(item.songTitle ?? '')},${item.videoId},${item.startSec},${item.endSec},$link');
+          '${CsvExport.escape(item.videoTitle ?? '')},${CsvExport.escape(item.songTitle ?? '')},${item.videoId},${item.startSec ?? ''},${item.endSec ?? ''},$link');
     }
 
     if (kIsWeb) {
@@ -484,8 +486,14 @@ class _HomePageState extends State<HomePage> {
                       item.videoTitle != item.songTitle) {
                     subtitleParts.add('動画: ${item.videoTitle}');
                   }
-                  subtitleParts.add(
-                      '${item.videoId} @ ${TimeFormat.formatTimeString(item.startSec)} - ${TimeFormat.formatTimeString(item.endSec)}');
+                  final timeRangeStr = item.startSec != null && item.endSec != null
+                      ? '${TimeFormat.formatTimeString(item.startSec!)} - ${TimeFormat.formatTimeString(item.endSec!)}'
+                      : item.startSec != null
+                          ? '${TimeFormat.formatTimeString(item.startSec!)} - 最後まで'
+                          : item.endSec != null
+                              ? '最初から - ${TimeFormat.formatTimeString(item.endSec!)}'
+                              : '最初から最後まで';
+                  subtitleParts.add('${item.videoId} @ $timeRangeStr');
                   return ListTile(
                     title: Text(
                       displayTitle,
