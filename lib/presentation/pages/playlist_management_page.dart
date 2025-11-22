@@ -104,16 +104,16 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
               TextField(
                 controller: startSecController,
                 decoration: InputDecoration(
-                  labelText: '開始時刻（分:秒 または 時:分:秒）',
-                  hintText: '例: 00:30 または 01:07:52',
+                  labelText: '開始時刻（オプション、分:秒 または 時:分:秒）',
+                  hintText: '例: 00:30 または 01:07:52（空欄の場合は動画の最初から）',
                 ),
               ),
               SizedBox(height: 8),
               TextField(
                 controller: endSecController,
                 decoration: InputDecoration(
-                  labelText: '終了時刻（分:秒 または 時:分:秒）',
-                  hintText: '例: 01:30 または 01:10:00',
+                  labelText: '終了時刻（オプション、分:秒 または 時:分:秒）',
+                  hintText: '例: 01:30 または 01:10:00（空欄の場合は動画の最後まで）',
                 ),
               ),
               SizedBox(height: 8),
@@ -155,9 +155,9 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
       final videoTitle = videoTitleController.text.trim();
       final songTitle = songTitleController.text.trim();
 
-      if (videoIdInput.isEmpty || startSecStr.isEmpty || endSecStr.isEmpty) {
+      if (videoIdInput.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('動画ID、開始時刻、終了時刻は必須です')),
+          SnackBar(content: Text('動画IDは必須です')),
         );
         return;
       }
@@ -171,19 +171,37 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
         return;
       }
 
-      final startSec = TimeFormat.parseTimeString(startSecStr);
-      final endSec = TimeFormat.parseTimeString(endSecStr);
+      int? startSec;
+      int? endSec;
 
-      if (startSec == null || endSec == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  '開始時刻と終了時刻は「分:秒」（例: 00:30）または「時:分:秒」（例: 01:07:52）形式で入力してください')),
-        );
-        return;
+      // 開始時刻の解析（空欄の場合はnull）
+      if (startSecStr.isNotEmpty) {
+        startSec = TimeFormat.parseTimeString(startSecStr);
+        if (startSec == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    '開始時刻は「分:秒」（例: 00:30）または「時:分:秒」（例: 01:07:52）形式で入力してください')),
+          );
+          return;
+        }
       }
 
-      if (startSec >= endSec) {
+      // 終了時刻の解析（空欄の場合はnull）
+      if (endSecStr.isNotEmpty) {
+        endSec = TimeFormat.parseTimeString(endSecStr);
+        if (endSec == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    '終了時刻は「分:秒」（例: 01:30）または「時:分:秒」（例: 01:10:00）形式で入力してください')),
+          );
+          return;
+        }
+      }
+
+      // 両方指定されている場合は、開始時刻 < 終了時刻をチェック
+      if (startSec != null && endSec != null && startSec >= endSec) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('終了時刻は開始時刻より大きくしてください')),
         );
@@ -241,8 +259,8 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
         final songTitle =
             row['song_title']?.isEmpty == true ? null : row['song_title'];
 
-        if (videoIdInput.isEmpty || startSecStr.isEmpty || endSecStr.isEmpty) {
-          continue; // 必須フィールドが空の行はスキップ
+        if (videoIdInput.isEmpty) {
+          continue; // 動画IDが空の行はスキップ
         }
 
         // YouTubeのURLからvideoIdを抽出
@@ -251,14 +269,27 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
           continue; // 有効なvideoIdが抽出できない行はスキップ
         }
 
-        final startSec = int.tryParse(startSecStr);
-        final endSec = int.tryParse(endSecStr);
+        int? startSec;
+        int? endSec;
 
-        if (startSec == null || endSec == null) {
-          continue; // 数値に変換できない行はスキップ
+        // 開始時刻の解析（空欄の場合はnull）
+        if (startSecStr.isNotEmpty) {
+          startSec = int.tryParse(startSecStr);
+          if (startSec == null) {
+            continue; // 数値に変換できない行はスキップ
+          }
         }
 
-        if (startSec >= endSec) {
+        // 終了時刻の解析（空欄の場合はnull）
+        if (endSecStr.isNotEmpty) {
+          endSec = int.tryParse(endSecStr);
+          if (endSec == null) {
+            continue; // 数値に変換できない行はスキップ
+          }
+        }
+
+        // 両方指定されている場合は、開始時刻 < 終了時刻をチェック
+        if (startSec != null && endSec != null && startSec >= endSec) {
           continue; // 開始時刻が終了時刻以上の行はスキップ
         }
 
@@ -307,9 +338,11 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
     final sb = StringBuffer();
     sb.writeln('video_title,song_title,video_id,start_sec,end_sec,link');
     for (var item in playlist) {
-      final link = 'https://youtu.be/${item.videoId}?t=${item.startSec}';
+      final link = item.startSec != null
+          ? 'https://youtu.be/${item.videoId}?t=${item.startSec}'
+          : 'https://youtu.be/${item.videoId}';
       sb.writeln(
-          '${CsvExport.escape(item.videoTitle ?? '')},${CsvExport.escape(item.songTitle ?? '')},${item.videoId},${item.startSec},${item.endSec},$link');
+          '${CsvExport.escape(item.videoTitle ?? '')},${CsvExport.escape(item.songTitle ?? '')},${item.videoId},${item.startSec ?? ''},${item.endSec ?? ''},$link');
     }
 
     if (kIsWeb) {
@@ -402,8 +435,15 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                           item.videoTitle != item.songTitle) {
                         subtitleParts.add('動画: ${item.videoTitle}');
                       }
-                      subtitleParts.add(
-                          '${item.videoId} @ ${TimeFormat.formatTimeString(item.startSec)} - ${TimeFormat.formatTimeString(item.endSec)}');
+                      final timeRangeStr = item.startSec != null &&
+                              item.endSec != null
+                          ? '${TimeFormat.formatTimeString(item.startSec!)} - ${TimeFormat.formatTimeString(item.endSec!)}'
+                          : item.startSec != null
+                              ? '${TimeFormat.formatTimeString(item.startSec!)} - 最後まで'
+                              : item.endSec != null
+                                  ? '最初から - ${TimeFormat.formatTimeString(item.endSec!)}'
+                                  : '最初から最後まで';
+                      subtitleParts.add('${item.videoId} @ $timeRangeStr');
                       return ListTile(
                         key: ObjectKey(item),
                         title: Text(displayTitle),

@@ -213,8 +213,8 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
               TextField(
                 controller: startSecController,
                 decoration: InputDecoration(
-                  labelText: '開始時刻（分:秒 または 時:分:秒）',
-                  hintText: '例: 00:30 または 01:07:52',
+                  labelText: '開始時刻（オプション、分:秒 または 時:分:秒）',
+                  hintText: '例: 00:30 または 01:07:52（空欄の場合は動画の最初から）',
                 ),
                 autofocus: true,
               ),
@@ -222,8 +222,8 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
               TextField(
                 controller: endSecController,
                 decoration: InputDecoration(
-                  labelText: '終了時刻（分:秒 または 時:分:秒）',
-                  hintText: '例: 01:30 または 01:10:00',
+                  labelText: '終了時刻（オプション、分:秒 または 時:分:秒）',
+                  hintText: '例: 01:30 または 01:10:00（空欄の場合は動画の最後まで）',
                 ),
               ),
               SizedBox(height: 8),
@@ -264,26 +264,37 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
       final videoTitle = videoTitleController.text.trim();
       final songTitle = songTitleController.text.trim();
 
-      if (startSecStr.isEmpty || endSecStr.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('開始時刻と終了時刻は必須です')),
-        );
-        return;
+      int? startSec;
+      int? endSec;
+
+      // 開始時刻の解析（空欄の場合はnull）
+      if (startSecStr.isNotEmpty) {
+        startSec = TimeFormat.parseTimeString(startSecStr);
+        if (startSec == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    '開始時刻は「分:秒」（例: 00:30）または「時:分:秒」（例: 01:07:52）形式で入力してください')),
+          );
+          return;
+        }
       }
 
-      final startSec = TimeFormat.parseTimeString(startSecStr);
-      final endSec = TimeFormat.parseTimeString(endSecStr);
-
-      if (startSec == null || endSec == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  '開始時刻と終了時刻は「分:秒」（例: 00:30）または「時:分:秒」（例: 01:07:52）形式で入力してください')),
-        );
-        return;
+      // 終了時刻の解析（空欄の場合はnull）
+      if (endSecStr.isNotEmpty) {
+        endSec = TimeFormat.parseTimeString(endSecStr);
+        if (endSec == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    '終了時刻は「分:秒」（例: 01:30）または「時:分:秒」（例: 01:10:00）形式で入力してください')),
+          );
+          return;
+        }
       }
 
-      if (startSec >= endSec) {
+      // 両方指定されている場合は、開始時刻 < 終了時刻をチェック
+      if (startSec != null && endSec != null && startSec >= endSec) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('終了時刻は開始時刻より大きくしてください')),
         );

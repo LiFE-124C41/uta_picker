@@ -138,8 +138,8 @@ class WebPlayer {
 
   void createPlayer(
     String videoId,
-    int startSec,
-    int endSec,
+    int? startSec,
+    int? endSec,
     Function(double) onTimeUpdate,
     VoidCallback? onEnded, {
     bool audioOnly = false,
@@ -186,8 +186,8 @@ class WebPlayer {
 
   void _createPlayerInternal(
     String videoId,
-    int startSec,
-    int endSec,
+    int? startSec,
+    int? endSec,
     Function(double) onTimeUpdate,
     VoidCallback? onEnded, {
     bool audioOnly = false,
@@ -244,9 +244,12 @@ class WebPlayer {
       final playerVars = <String, dynamic>{
         'playsinline': 1,
         'rel': 0,
-        'start': startSec,
         'enablejsapi': 1,
       };
+      // startSecがnullでない場合のみstartを設定
+      if (startSec != null) {
+        playerVars['start'] = startSec;
+      }
 
       // 音声のみモードの場合、最低解像度を設定してパケット量を削減
       if (audioOnly) {
@@ -279,7 +282,9 @@ class WebPlayer {
                   print('Error setting playback quality: $e');
                 }
               }
-              player.callMethod('seekTo', [startSec, true]);
+              if (startSec != null) {
+                player.callMethod('seekTo', [startSec, true]);
+              }
               player.callMethod('playVideo');
               monitorPlaybackTime(
                   player, startSec, endSec, onTimeUpdate, onEnded);
@@ -390,8 +395,8 @@ class WebPlayer {
 
   void monitorPlaybackTime(
     dynamic player,
-    int startSec,
-    int endSec,
+    int? startSec,
+    int? endSec,
     Function(double) onTimeUpdate,
     VoidCallback? onEnded,
   ) {
@@ -408,7 +413,8 @@ class WebPlayer {
             (jsPlayer.callMethod('getCurrentTime') as num).toDouble();
         onTimeUpdate(currentTime);
 
-        if (currentTime >= endSec) {
+        // endSecがnullでない場合のみ、終了時刻をチェック
+        if (endSec != null && currentTime >= endSec) {
           // 終了時刻に達したら停止
           // stopVideoを呼び出すことで、onStateChangeでENDED状態を検出できるようにする
           try {
@@ -585,16 +591,16 @@ class WebPlayer {
 
 class _PendingPlayerCreation {
   final String videoId;
-  final int startSec;
-  final int endSec;
+  final int? startSec;
+  final int? endSec;
   final Function(double) onTimeUpdate;
   final VoidCallback? onEnded;
   final bool audioOnly;
 
   _PendingPlayerCreation({
     required this.videoId,
-    required this.startSec,
-    required this.endSec,
+    this.startSec,
+    this.endSec,
     required this.onTimeUpdate,
     this.onEnded,
     this.audioOnly = false,

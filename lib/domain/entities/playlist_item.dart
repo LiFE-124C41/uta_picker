@@ -1,15 +1,15 @@
 // lib/domain/entities/playlist_item.dart
 class PlaylistItem {
   String videoId;
-  int startSec;
-  int endSec;
+  int? startSec; // nullの場合は動画の最初から
+  int? endSec; // nullの場合は動画の最後まで
   String? videoTitle; // 動画タイトル
   String? songTitle; // 楽曲タイトル
 
   PlaylistItem({
     required this.videoId,
-    required this.startSec,
-    required this.endSec,
+    this.startSec,
+    this.endSec,
     this.videoTitle,
     this.songTitle,
   });
@@ -27,8 +27,8 @@ class PlaylistItem {
     final songTitle = json['song_title'] as String? ?? json['title'] as String?;
     return PlaylistItem(
       videoId: json['video_id'] as String,
-      startSec: json['start_sec'] as int,
-      endSec: json['end_sec'] as int,
+      startSec: json['start_sec'] as int?,
+      endSec: json['end_sec'] as int?,
       videoTitle: json['video_title'] as String?,
       songTitle: songTitle,
     );
