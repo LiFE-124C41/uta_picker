@@ -376,327 +376,345 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final left = Container(
-      width: 320,
-      child: Column(
-        children: [
-          Padding(
-            padding: EdgeInsets.all(8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (playlist.isNotEmpty) ...[
-                          IconButton(
-                            icon: Icon(
-                              isPlayingPlaylist ? Icons.stop : Icons.play_arrow,
-                            ),
-                            onPressed: isPlayingPlaylist
-                                ? _stopPlaylist
-                                : _playPlaylist,
-                            tooltip: isPlayingPlaylist ? '停止' : '再生',
-                            constraints: BoxConstraints(),
-                            padding: EdgeInsets.all(8),
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              _repeatMode == 0
-                                  ? Icons.repeat
-                                  : _repeatMode == 1
-                                      ? Icons.repeat_one
-                                      : Icons.repeat,
-                              color: _repeatMode > 0 ? Colors.blue : null,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _repeatMode = (_repeatMode + 1) % 3;
-                              });
-                            },
-                            tooltip: _repeatMode == 0
-                                ? 'リピートなし'
-                                : _repeatMode == 1
-                                    ? '1曲リピート'
-                                    : '全曲リピート',
-                            constraints: BoxConstraints(),
-                            padding: EdgeInsets.all(8),
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              Icons.shuffle,
-                              color: _shuffleMode ? Colors.blue : null,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _shuffleMode = !_shuffleMode;
-                                if (!_shuffleMode) {
-                                  _shuffledIndices = null;
-                                }
-                              });
-                            },
-                            tooltip:
-                                _shuffleMode ? 'シャッフル再生: オン' : 'シャッフル再生: オフ',
-                            constraints: BoxConstraints(),
-                            padding: EdgeInsets.all(8),
-                          ),
-                          if (isPlayingPlaylist && currentPlaylistIndex != null)
-                            Padding(
-                              padding: EdgeInsets.only(right: 8),
-                              child: Text(
-                                _shuffleMode && _shuffledIndices != null
-                                    ? '${_shuffledIndices!.indexOf(currentPlaylistIndex!) + 1} / ${playlist.length} (シャッフル)'
-                                    : '${currentPlaylistIndex! + 1} / ${playlist.length}',
-                                style: TextStyle(fontSize: 12),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 画面幅が600px以下の場合はスマートフォンモード（縦並び）
+        final isMobile = constraints.maxWidth < 600;
+        
+        final left = Container(
+          width: isMobile ? double.infinity : 320,
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.all(8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (playlist.isNotEmpty) ...[
+                              IconButton(
+                                icon: Icon(
+                                  isPlayingPlaylist ? Icons.stop : Icons.play_arrow,
+                                ),
+                                onPressed: isPlayingPlaylist
+                                    ? _stopPlaylist
+                                    : _playPlaylist,
+                                tooltip: isPlayingPlaylist ? '停止' : '再生',
+                                constraints: BoxConstraints(),
+                                padding: EdgeInsets.all(8),
                               ),
-                            ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.settings),
-                  onPressed: () async {
-                    await Navigator.pushNamed(context, '/playlist-management');
-                    await _loadPlaylist();
-                  },
-                  tooltip: 'プレイリスト管理',
-                  constraints: BoxConstraints(),
-                  padding: EdgeInsets.all(8),
-                ),
-              ],
-            ),
-          ),
-          if (playlist.isNotEmpty)
-            Expanded(
-              child: ListView.builder(
-                itemCount: playlist.length,
-                itemBuilder: (context, idx) {
-                  final item = playlist[idx];
-                  final isCurrent =
-                      isPlayingPlaylist && currentPlaylistIndex == idx;
-                  final displayTitle =
-                      item.songTitle ?? item.videoTitle ?? '動画 ${item.videoId}';
-                  final subtitleParts = <String>[];
-                  if (item.videoTitle != null &&
-                      item.videoTitle != item.songTitle) {
-                    subtitleParts.add('動画: ${item.videoTitle}');
-                  }
-                  final timeRangeStr = item.startSec != null && item.endSec != null
-                      ? '${TimeFormat.formatTimeString(item.startSec!)} - ${TimeFormat.formatTimeString(item.endSec!)}'
-                      : item.startSec != null
-                          ? '${TimeFormat.formatTimeString(item.startSec!)} - 最後まで'
-                          : item.endSec != null
-                              ? '最初から - ${TimeFormat.formatTimeString(item.endSec!)}'
-                              : '最初から最後まで';
-                  subtitleParts.add('${item.videoId} @ $timeRangeStr');
-                  return ListTile(
-                    title: Text(
-                      displayTitle,
-                      style: TextStyle(
-                        fontWeight:
-                            isCurrent ? FontWeight.bold : FontWeight.normal,
-                        color: isCurrent ? Colors.blue : null,
+                              IconButton(
+                                icon: Icon(
+                                  _repeatMode == 0
+                                      ? Icons.repeat
+                                      : _repeatMode == 1
+                                          ? Icons.repeat_one
+                                          : Icons.repeat,
+                                  color: _repeatMode > 0 ? Colors.blue : null,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _repeatMode = (_repeatMode + 1) % 3;
+                                  });
+                                },
+                                tooltip: _repeatMode == 0
+                                    ? 'リピートなし'
+                                    : _repeatMode == 1
+                                        ? '1曲リピート'
+                                        : '全曲リピート',
+                                constraints: BoxConstraints(),
+                                padding: EdgeInsets.all(8),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  Icons.shuffle,
+                                  color: _shuffleMode ? Colors.blue : null,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _shuffleMode = !_shuffleMode;
+                                    if (!_shuffleMode) {
+                                      _shuffledIndices = null;
+                                    }
+                                  });
+                                },
+                                tooltip:
+                                    _shuffleMode ? 'シャッフル再生: オン' : 'シャッフル再生: オフ',
+                                constraints: BoxConstraints(),
+                                padding: EdgeInsets.all(8),
+                              ),
+                              if (isPlayingPlaylist && currentPlaylistIndex != null)
+                                Padding(
+                                  padding: EdgeInsets.only(right: 8),
+                                  child: Text(
+                                    _shuffleMode && _shuffledIndices != null
+                                        ? '${_shuffledIndices!.indexOf(currentPlaylistIndex!) + 1} / ${playlist.length} (シャッフル)'
+                                        : '${currentPlaylistIndex! + 1} / ${playlist.length}',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                            ],
+                          ],
+                        ),
                       ),
                     ),
-                    subtitle: Text(subtitleParts.join('\n')),
-                    trailing: IconButton(
-                      icon: Icon(
-                        isCurrent ? Icons.equalizer : Icons.play_arrow,
-                        size: 20,
-                      ),
-                      onPressed: () {
-                        // シャッフルモードが有効な場合、新しいシャッフル順序を生成
-                        if (_shuffleMode) {
-                          _shufflePlaylist();
-                        }
-                        setState(() {
-                          isPlayingPlaylist = true;
-                          currentPlaylistIndex = idx;
-                        });
-                        _playTimeRange(
-                            item.videoId, item.startSec, item.endSec);
+                    IconButton(
+                      icon: Icon(Icons.settings),
+                      onPressed: () async {
+                        await Navigator.pushNamed(context, '/playlist-management');
+                        await _loadPlaylist();
                       },
-                      tooltip: isCurrent ? '再生中' : '再生',
+                      tooltip: 'プレイリスト管理',
+                      constraints: BoxConstraints(),
+                      padding: EdgeInsets.all(8),
                     ),
-                    onTap: () {
-                      // シャッフルモードが有効な場合、新しいシャッフル順序を生成
-                      if (_shuffleMode) {
-                        _shufflePlaylist();
-                      }
-                      setState(() {
-                        isPlayingPlaylist = true;
-                        currentPlaylistIndex = idx;
-                      });
-                      _playTimeRange(item.videoId, item.startSec, item.endSec);
-                    },
-                  );
-                },
-              ),
-            )
-          else
-            Padding(
-              padding: EdgeInsets.all(8),
-              child: Text('プレイリストが空です\n管理画面で追加してください'),
-            ),
-        ],
-      ),
-    );
-
-    final right = Column(
-      children: [
-        // 動画リスト表示セクション
-        if (videos.isNotEmpty)
-          Container(
-            height: 200,
-            color: Colors.grey[100],
-            child: Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.all(8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '動画リスト (${videos.length})',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
+              ),
+              if (playlist.isNotEmpty)
                 Expanded(
                   child: ListView.builder(
-                    itemCount: videos.length,
+                    itemCount: playlist.length,
                     itemBuilder: (context, idx) {
-                      final video = videos[idx];
-                      final isSelected = selectedIndex == idx;
+                      final item = playlist[idx];
+                      final isCurrent =
+                          isPlayingPlaylist && currentPlaylistIndex == idx;
+                      final displayTitle =
+                          item.songTitle ?? item.videoTitle ?? '動画 ${item.videoId}';
+                      final subtitleParts = <String>[];
+                      if (item.videoTitle != null &&
+                          item.videoTitle != item.songTitle) {
+                        subtitleParts.add('動画: ${item.videoTitle}');
+                      }
+                      final timeRangeStr = item.startSec != null && item.endSec != null
+                          ? '${TimeFormat.formatTimeString(item.startSec!)} - ${TimeFormat.formatTimeString(item.endSec!)}'
+                          : item.startSec != null
+                              ? '${TimeFormat.formatTimeString(item.startSec!)} - 最後まで'
+                              : item.endSec != null
+                                  ? '最初から - ${TimeFormat.formatTimeString(item.endSec!)}'
+                                  : '最初から最後まで';
+                      subtitleParts.add('${item.videoId} @ $timeRangeStr');
                       return ListTile(
                         title: Text(
-                          video.title,
+                          displayTitle,
                           style: TextStyle(
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            fontSize: 12,
+                            fontWeight:
+                                isCurrent ? FontWeight.bold : FontWeight.normal,
+                            color: isCurrent ? Colors.blue : null,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                        subtitle: Text(
-                          'ID: ${video.videoId}',
-                          style: TextStyle(fontSize: 10),
-                        ),
-                        selected: isSelected,
+                        subtitle: Text(subtitleParts.join('\n')),
                         trailing: IconButton(
-                          icon: Icon(Icons.playlist_add, size: 20),
-                          onPressed: () => _showCreatePlaylistItemDialog(video),
-                          tooltip: 'プレイリストに追加',
+                          icon: Icon(
+                            isCurrent ? Icons.equalizer : Icons.play_arrow,
+                            size: 20,
+                          ),
+                          onPressed: () {
+                            // シャッフルモードが有効な場合、新しいシャッフル順序を生成
+                            if (_shuffleMode) {
+                              _shufflePlaylist();
+                            }
+                            setState(() {
+                              isPlayingPlaylist = true;
+                              currentPlaylistIndex = idx;
+                            });
+                            _playTimeRange(
+                                item.videoId, item.startSec, item.endSec);
+                          },
+                          tooltip: isCurrent ? '再生中' : '再生',
                         ),
                         onTap: () {
+                          // シャッフルモードが有効な場合、新しいシャッフル順序を生成
+                          if (_shuffleMode) {
+                            _shufflePlaylist();
+                          }
                           setState(() {
-                            selectedIndex = idx;
+                            isPlayingPlaylist = true;
+                            currentPlaylistIndex = idx;
                           });
-                          loadSelectedVideoToWebview();
+                          _playTimeRange(item.videoId, item.startSec, item.endSec);
                         },
                       );
                     },
                   ),
-                ),
-              ],
-            ),
-          ),
-        Expanded(
-          child: Container(
-            color: Colors.black12,
-            child: kIsWeb
-                ? (_currentVideoId != null
-                    ? _buildWebPlayer()
-                    : const Center(child: Text('動画を選択してください')))
-                : _desktopPlayer.buildWebView(),
-          ),
-        ),
-      ],
-    );
-
-    return Scaffold(
-      appBar: AppBar(
-        title: GestureDetector(
-          onTap: _handleTitleTap,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Uta(Gawa)Picker'),
-              if (_isDeveloperModeEnabled && _appVersion != null)
-                Text(
-                  'v$_appVersion',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+                )
+              else
+                Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Text('プレイリストが空です\n管理画面で追加してください'),
                 ),
             ],
           ),
-        ),
-        actions: [
-          // 音声のみモード切り替えボタン（Web + 開発者モードのみ）
-          if (kIsWeb && _isDeveloperModeEnabled)
-            IconButton(
-              icon: Icon(
-                _audioOnlyMode ? Icons.audiotrack : Icons.video_library,
-                color: _audioOnlyMode ? Colors.blue : null,
-              ),
-              onPressed: () {
-                setState(() {
-                  _audioOnlyMode = !_audioOnlyMode;
-                });
-                // アナリティクス: 音声のみモード切り替え
-                AnalyticsService.logAudioOnlyModeToggled(
-                    enabled: _audioOnlyMode);
-                // 再生中の場合は再作成
-                if (_isPlaying && _currentVideoId != null) {
-                  // 現在の再生位置を取得して再作成
-                  final currentItem =
-                      isPlayingPlaylist && currentPlaylistIndex != null
-                          ? playlist[currentPlaylistIndex!]
-                          : null;
-                  if (currentItem != null) {
-                    _playTimeRange(currentItem.videoId, currentItem.startSec,
-                        currentItem.endSec);
-                  }
-                }
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      _audioOnlyMode ? '音声重視モード（低解像度）を有効にしました' : '通常モードに戻しました',
+        );
+
+        final right = Column(
+          children: [
+            // 動画リスト表示セクション
+            if (videos.isNotEmpty)
+              Container(
+                height: isMobile ? 150 : 200,
+                color: Colors.grey[100],
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '動画リスト (${videos.length})',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
                     ),
-                    duration: Duration(seconds: 2),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: videos.length,
+                        itemBuilder: (context, idx) {
+                          final video = videos[idx];
+                          final isSelected = selectedIndex == idx;
+                          return ListTile(
+                            title: Text(
+                              video.title,
+                              style: TextStyle(
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                fontSize: 12,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              'ID: ${video.videoId}',
+                              style: TextStyle(fontSize: 10),
+                            ),
+                            selected: isSelected,
+                            trailing: IconButton(
+                              icon: Icon(Icons.playlist_add, size: 20),
+                              onPressed: () => _showCreatePlaylistItemDialog(video),
+                              tooltip: 'プレイリストに追加',
+                            ),
+                            onTap: () {
+                              setState(() {
+                                selectedIndex = idx;
+                              });
+                              loadSelectedVideoToWebview();
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            Expanded(
+              child: Container(
+                color: Colors.black12,
+                child: kIsWeb
+                    ? (_currentVideoId != null
+                        ? _buildWebPlayer()
+                        : const Center(child: Text('動画を選択してください')))
+                    : _desktopPlayer.buildWebView(),
+              ),
+            ),
+          ],
+        );
+
+        return Scaffold(
+          appBar: AppBar(
+            title: GestureDetector(
+              onTap: _handleTitleTap,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Uta(Gawa)Picker'),
+                  if (_isDeveloperModeEnabled && _appVersion != null)
+                    Text(
+                      'v$_appVersion',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+                    ),
+                ],
+              ),
+            ),
+            actions: [
+              // 音声のみモード切り替えボタン（Web + 開発者モードのみ）
+              if (kIsWeb && _isDeveloperModeEnabled)
+                IconButton(
+                  icon: Icon(
+                    _audioOnlyMode ? Icons.audiotrack : Icons.video_library,
+                    color: _audioOnlyMode ? Colors.blue : null,
                   ),
-                );
-              },
-              tooltip:
-                  _audioOnlyMode ? '音声重視モード（低解像度）: オフ' : '音声重視モード（低解像度）: オン',
-            ),
-          if (_isDeveloperModeEnabled)
-            IconButton(
-              icon: Icon(Icons.file_upload),
-              onPressed: () async {
-                await Navigator.pushNamed(context, '/playlist-import');
-                await _loadPlaylist();
-              },
-              tooltip: 'JSONからプレイリストを作成',
-            ),
-          if (_isDeveloperModeEnabled)
-            IconButton(
-              icon: Icon(Icons.download),
-              onPressed: _showYoutubeListDownloadDialog,
-              tooltip: 'YouTubeリストからCSVをダウンロード',
-            ),
-        ],
-      ),
-      body: Row(children: [left, Expanded(child: right)]),
+                  onPressed: () {
+                    setState(() {
+                      _audioOnlyMode = !_audioOnlyMode;
+                    });
+                    // アナリティクス: 音声のみモード切り替え
+                    AnalyticsService.logAudioOnlyModeToggled(
+                        enabled: _audioOnlyMode);
+                    // 再生中の場合は再作成
+                    if (_isPlaying && _currentVideoId != null) {
+                      // 現在の再生位置を取得して再作成
+                      final currentItem =
+                          isPlayingPlaylist && currentPlaylistIndex != null
+                              ? playlist[currentPlaylistIndex!]
+                              : null;
+                      if (currentItem != null) {
+                        _playTimeRange(currentItem.videoId, currentItem.startSec,
+                            currentItem.endSec);
+                      }
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          _audioOnlyMode ? '音声重視モード（低解像度）を有効にしました' : '通常モードに戻しました',
+                        ),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  tooltip:
+                      _audioOnlyMode ? '音声重視モード（低解像度）: オフ' : '音声重視モード（低解像度）: オン',
+                ),
+              if (_isDeveloperModeEnabled)
+                IconButton(
+                  icon: Icon(Icons.file_upload),
+                  onPressed: () async {
+                    await Navigator.pushNamed(context, '/playlist-import');
+                    await _loadPlaylist();
+                  },
+                  tooltip: 'JSONからプレイリストを作成',
+                ),
+              if (_isDeveloperModeEnabled)
+                IconButton(
+                  icon: Icon(Icons.download),
+                  onPressed: _showYoutubeListDownloadDialog,
+                  tooltip: 'YouTubeリストからCSVをダウンロード',
+                ),
+            ],
+          ),
+          body: isMobile
+              ? Column(
+                  children: [
+                    // スマートフォン: プレイリストを上に、動画プレーヤーを下に
+                    Container(
+                      height: constraints.maxHeight * 0.4,
+                      child: left,
+                    ),
+                    Expanded(child: right),
+                  ],
+                )
+              : Row(children: [left, Expanded(child: right)]),
+        );
+      },
     );
   }
 
