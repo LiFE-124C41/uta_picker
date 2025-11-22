@@ -1,0 +1,234 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f5f5f5;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 40px 20px;
+    text-align: center;
+    margin: -20px -20px 40px -20px;
+}
+
+header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+}
+
+header p {
+    font-size: 1.2em;
+    opacity: 0.9;
+}
+
+nav {
+    background-color: #f8f9fa;
+    padding: 15px 20px;
+    margin: -20px -20px 30px -20px;
+    border-bottom: 2px solid #e9ecef;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+nav ul {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+nav a {
+    color: #667eea;
+    text-decoration: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+nav a:hover {
+    background-color: #e9ecef;
+}
+
+section {
+    margin-bottom: 50px;
+}
+
+h2 {
+    color: #667eea;
+    font-size: 2em;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #667eea;
+}
+
+h3 {
+    color: #764ba2;
+    font-size: 1.5em;
+    margin-top: 30px;
+    margin-bottom: 15px;
+}
+
+h4 {
+    color: #555;
+    font-size: 1.2em;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+p {
+    margin-bottom: 15px;
+}
+
+ul, ol {
+    margin-left: 30px;
+    margin-bottom: 15px;
+}
+
+li {
+    margin-bottom: 8px;
+}
+
+.feature-box {
+    background-color: #f8f9fa;
+    border-left: 4px solid #667eea;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 5px;
+}
+
+.warning-box {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 5px;
+}
+
+.info-box {
+    background-color: #d1ecf1;
+    border-left: 4px solid #17a2b8;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 5px;
+}
+
+.code-block {
+    background-color: #2d2d2d;
+    color: #f8f8f2;
+    padding: 15px;
+    border-radius: 5px;
+    overflow-x: auto;
+    margin: 15px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+.icon-list {
+    list-style: none;
+    margin-left: 0;
+}
+
+.icon-list li {
+    margin-bottom: 15px;
+    padding-left: 30px;
+    position: relative;
+}
+
+.icon-list li::before {
+    content: "▶";
+    position: absolute;
+    left: 0;
+    color: #667eea;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #667eea;
+    color: white;
+}
+
+tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.image-placeholder {
+    background-color: #e9ecef;
+    border: 2px dashed #adb5bd;
+    padding: 40px;
+    text-align: center;
+    margin: 20px 0;
+    border-radius: 5px;
+    color: #6c757d;
+}
+
+.image-container {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.image-container .screenshot {
+    max-width: 100%;
+    height: auto;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 10px;
+}
+
+.image-caption {
+    color: #6c757d;
+    font-size: 0.9em;
+    margin-top: 10px;
+    line-height: 1.5;
+}
+
+footer {
+    text-align: center;
+    padding: 30px 20px;
+    margin-top: 50px;
+    background-color: #f8f9fa;
+    border-top: 2px solid #e9ecef;
+    color: #6c757d;
+}
+
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 1.8em;
+    }
+    
+    nav ul {
+        flex-direction: column;
+    }
+    
+    .container {
+        padding: 15px;
+    }
+}
