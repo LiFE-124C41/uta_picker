@@ -124,8 +124,8 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                   TextField(
                     controller: videoIdController,
                     decoration: InputDecoration(
-                      labelText: '動画IDまたはURL',
-                      hintText: '例: dQw4w9WgXcQ または 動画URL',
+                      labelText: '動画URLまたはID（必須）',
+                      hintText: '例: 動画URL または dQw4w9WgXcQ',
                     ),
                     autofocus: true,
                   ),
@@ -133,7 +133,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                   TextField(
                     controller: startSecController,
                     decoration: InputDecoration(
-                      labelText: '開始時刻（オプション、分:秒 または 時:分:秒）',
+                      labelText: '開始時刻（分:秒 または 時:分:秒）',
                       hintText: '例: 00:30 または 01:07:52（空欄の場合は動画の最初から）',
                     ),
                   ),
@@ -141,7 +141,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                   TextField(
                     controller: endSecController,
                     decoration: InputDecoration(
-                      labelText: '終了時刻（オプション、分:秒 または 時:分:秒）',
+                      labelText: '終了時刻（分:秒 または 時:分:秒）',
                       hintText: '例: 01:30 または 01:10:00（空欄の場合は動画の最後まで）',
                     ),
                   ),
@@ -149,7 +149,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                   TextField(
                     controller: videoTitleController,
                     decoration: InputDecoration(
-                      labelText: '動画タイトル（オプション）',
+                      labelText: '動画タイトル',
                       hintText: '例: YouTube動画のタイトル',
                     ),
                   ),
@@ -157,7 +157,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                   TextField(
                     controller: songTitleController,
                     decoration: InputDecoration(
-                      labelText: '楽曲タイトル（オプション）',
+                      labelText: '楽曲タイトル',
                       hintText: '例: 曲名',
                     ),
                   ),
