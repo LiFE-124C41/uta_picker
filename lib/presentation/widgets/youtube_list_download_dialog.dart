@@ -116,7 +116,18 @@ Future<void> downloadCsvFromYoutubeList(
       print('POSTリクエスト送信: $uri');
     }
 
-    final response = await http.post(uri).timeout(
+    // リクエストヘッダーを設定（CORS対応）
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'text/csv, application/json',
+    };
+
+    final response = await http
+        .post(
+      uri,
+      headers: headers,
+    )
+        .timeout(
       Duration(seconds: 90),
       onTimeout: () {
         throw TimeoutException('リクエストがタイムアウトしました');
@@ -172,11 +183,16 @@ Future<void> downloadCsvFromYoutubeList(
     if (kDebugMode) {
       print('ClientException: $e');
     }
+    String errorMessage = 'ネットワークエラーが発生しました';
+    if (kIsWeb) {
+      errorMessage += '\nCORSエラーの可能性があります。サーバー側のCORS設定を確認してください。';
+    }
+    errorMessage += '\n${e.message}';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('ネットワークエラーが発生しました: ${e.message}'),
+        content: Text(errorMessage),
         backgroundColor: Colors.red,
-        duration: Duration(seconds: 5),
+        duration: Duration(seconds: 8),
       ),
     );
   } catch (e, stackTrace) {
