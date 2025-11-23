@@ -30,7 +30,7 @@ Future<void> showYoutubeListDownloadDialog(
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('YouTubeリストからCSVをダウンロード'),
+        title: Text('YouTubeリストからプレイリストをダウンロード'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -149,7 +149,7 @@ Future<void> downloadCsvFromYoutubeList(
           ..click();
         html.Url.revokeObjectUrl(url);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('CSVファイルをダウンロードしました')),
+          SnackBar(content: Text('プレイリストファイルをダウンロードしました')),
         );
       } else {
         // デスクトップ版: ファイルに保存
@@ -158,7 +158,7 @@ Future<void> downloadCsvFromYoutubeList(
             '${dir.path}${io_platform.Platform.pathSeparator}youtube_list_${playlistId}.csv');
         await file.writeAsString(csvContent);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('CSVファイルを保存しました: ${file.path}')),
+          SnackBar(content: Text('プレイリストファイルを保存しました: ${file.path}')),
         );
       }
     } else {
