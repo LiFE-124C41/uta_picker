@@ -7,6 +7,7 @@ YouTubeアーカイブ動画から曲の開始時間と終了時間をマーク�
 ![GitHub release](https://img.shields.io/github/v/release/life-124c41/uta_picker)
 [![Deploy Status](https://github.com/life-124c41/uta_picker/actions/workflows/deploy.yml/badge.svg)](https://github.com/life-124c41/uta_picker/actions/workflows/deploy.yml)
 [![License: MIT](https://img.shields.io/github/license/life-124c41/uta_picker.svg)](https://github.com/LiFE-124C41/uta_picker/blob/main/LICENSE)
+![oshi](https://img.shields.io/badge/%E2%9D%A4%EF%B8%8F%E2%80%8D%F0%9F%94%A5%F0%9F%88%81%E2%9A%A1-担当-656a75)
 
 ## 概要
 
