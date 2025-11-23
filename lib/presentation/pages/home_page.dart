@@ -650,7 +650,16 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Uta(Gawa)Picker'),
+                      Image.asset(
+                        'assets/logo.png',
+                        height: 32,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Text(
+                            'Uta(Gawa)Picker',
+                          );
+                        },
+                      ),
                       if (_isDeveloperModeEnabled && _appVersion != null)
                         Text(
                           'v$_appVersion',
