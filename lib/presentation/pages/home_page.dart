@@ -279,7 +279,7 @@ class _HomePageState extends State<HomePage> {
         ..click();
       html.Url.revokeObjectUrl(url);
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('CSVファイルをダウンロードしました')));
+          .showSnackBar(SnackBar(content: Text('プレイリストファイルをダウンロードしました')));
     } else {
       final dir = await getApplicationSupportDirectory();
       final out = io_platform.File(

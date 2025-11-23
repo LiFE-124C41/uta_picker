@@ -345,8 +345,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
       // アナリティクス: CSVインポート
       AnalyticsService.logCsvImported(itemCount: importedPlaylist.length);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('${importedPlaylist.length}件のプレイリスト項目をインポートしました')),
+        SnackBar(content: Text('${importedPlaylist.length}件のプレイリスト項目を取り込みました')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -419,12 +418,12 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                     IconButton(
                       icon: Icon(Icons.file_upload),
                       onPressed: _importPlaylistCsv,
-                      tooltip: 'CSV取り込み',
+                      tooltip: '取り込み',
                     ),
                     IconButton(
                       icon: Icon(Icons.file_download),
                       onPressed: _exportPlaylistCsv,
-                      tooltip: 'CSVエクスポート',
+                      tooltip: 'バックアップ',
                     ),
                     if (playlist.isNotEmpty)
                       IconButton(
