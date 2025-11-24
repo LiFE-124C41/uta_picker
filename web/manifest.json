@@ -5,8 +5,8 @@
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "description": "A tool to mark start/end times of songs in YouTube archives and create playlists.",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {
