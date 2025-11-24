@@ -5,6 +5,8 @@ A Flutter application for marking the start and end times of songs in YouTube ar
 [English](README.en.md) | [日本語](README.md)
 
 ![GitHub release](https://img.shields.io/github/v/release/life-124c41/uta_picker)
+[![Deploy Status](https://github.com/life-124c41/uta_picker/actions/workflows/deploy.yml/badge.svg)](https://github.com/life-124c41/uta_picker/actions/workflows/deploy.yml)
+[![License: MIT](https://img.shields.io/github/license/life-124c41/uta_picker.svg)](https://github.com/LiFE-124C41/uta_picker/blob/main/LICENSE)
 
 ## Overview
 
