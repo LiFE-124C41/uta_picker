@@ -57,4 +57,13 @@ class AnchorElement extends Element {
   void setAttribute(String name, String value) {}
 }
 
+class Location {
+  void reload() {}
+}
+
+class Window {
+  Location get location => Location();
+}
+
 final document = Document();
+final window = Window();
