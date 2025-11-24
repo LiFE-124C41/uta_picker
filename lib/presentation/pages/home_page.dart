@@ -10,7 +10,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../platform/stubs/io_stub.dart' if (dart.library.io) 'dart:io'
     as io_platform;
 import '../../../platform/stubs/html_stub.dart'
-    if (dart.library.html) 'dart:html' as html show Blob, Url, AnchorElement;
+    if (dart.library.html) 'dart:html' as html
+    show Blob, Url, AnchorElement, window;
 
 import '../../../domain/entities/video_item.dart';
 import '../../../domain/entities/playlist_item.dart';
@@ -397,6 +398,12 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void _reloadPage() {
+    if (kIsWeb) {
+      html.window.location.reload();
+    }
+  }
+
   @override
   void dispose() {
     _timeUpdateTimer?.cancel();
@@ -701,6 +708,13 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 actions: [
+                  // リロードボタン（Web版のみ）
+                  if (kIsWeb)
+                    IconButton(
+                      icon: Icon(Icons.refresh),
+                      onPressed: _reloadPage,
+                      tooltip: 'リロード',
+                    ),
                   // マニュアルボタン
                   IconButton(
                     icon: Icon(Icons.help_outline),
