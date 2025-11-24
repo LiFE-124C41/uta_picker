@@ -310,6 +310,9 @@ jobs:
         # 例: リポジトリ名が "my-app" の場合 → "/my-app/"
         run: flutter build web --base-href "/uta_picker/" --release
 
+      - name: Copy docs to build/web
+        run: cp -r docs build/web/docs
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
