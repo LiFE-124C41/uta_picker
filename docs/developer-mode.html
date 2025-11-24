@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>開発者モード - Uta(Gawa)Picker ユーザーマニュアル</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>開発者モード</h1>
+            <p>Uta(Gawa)Picker 上級者向け機能</p>
+        </header>
+        
+        <nav>
+            <ul>
+                <li><a href="index.html">← マニュアルトップに戻る</a></li>
+            </ul>
+        </nav>
+        
+        <section id="developer-mode">
+            <h2>開発者モード</h2>
+            
+            <div class="warning-box">
+                <p><strong>⚠️ 注意</strong>: 開発者モードは実験的な機能であり、正常に動作しない可能性があります。また、将来のバージョンで変更や削除される可能性があります。使用する際は留意をお願いします。</p>
+            </div>
+            
+            <h3>開発者モードの有効化</h3>
+            <p>開発者モードを有効にすると、以下の追加機能が利用できます：</p>
+            <ul>
+                <li>JSONファイルから動画リストのインポート</li>
+                <li>YouTubeリストからCSVのダウンロード</li>
+                <li>音声重視モード</li>
+            </ul>
+            
+            <h4>有効化方法</h4>
+            <ol>
+                <li>アプリのタイトル「Uta(Gawa)Picker」を5回連続でタップ（クリック）</li>
+                <li>「開発者モードが有効になりました」というメッセージが表示されます</li>
+                <li>アプリバーの右上に開発者モード用のボタンが表示されます</li>
+            </ol>
+            
+            <div class="info-box">
+                <p><strong>ヒント</strong>: タイトルをタップしてから2秒以内に次のタップを行わないと、カウントがリセットされます。素早く5回タップしてください。</p>
+            </div>
+            
+            <h3>JSONからプレイリストを作成</h3>
+            <p>開発者モードが有効になると、JSONファイルから動画リストを一括インポートできます。</p>
+            
+            <h4>使用方法</h4>
+            <ol>
+                <li>アプリバーの右上にある「📤 JSONからプレイリストを作成」ボタンをクリック</li>
+                <li>JSONファイルを選択</li>
+                <li>動画リストが表示されます</li>
+                <li>各動画の「➕ プレイリストに追加」ボタンをクリックして、プレイリストに追加</li>
+                <li>ダイアログが表示されます。開始時刻、終了時刻、楽曲タイトルを入力できます（任意項目）</li>
+                <li>「追加」ボタンをクリックすることで、プレイリストに反映されます</li>
+            </ol>
+            
+            <h4>JSONファイルの形式</h4>
+            <p>JSONファイルは以下の形式である必要があります：</p>
+            <div class="code-block">
+[
+  {
+    "videoId": "dQw4w9WgXcQ",
+    "title": "動画タイトル"
+  },
+  {
+    "videoId": "abc123def45",
+    "title": "別の動画タイトル"
+  }
+]
+            </div>
+            
+            <div class="info-box">
+                <p><strong>注意</strong>: JSONファイルは、<a href="https://github.com/LiFE-124C41/uta_picker/tree/main/script" target="_blank">uta_picker/tree/main/script</a>の<code>fetch_videos.py</code>スクリプトを使用して生成できます。詳細はREADMEに記載されています。</p>
+            </div>
+            
+            <div class="info-box">
+                <p><strong>💡 便利な機能</strong>: これらのPythonスクリプトは、<a href="https://github.com/LiFE-124C41/uta_picker/blob/main/script/uta_picker_script.ipynb" target="_blank">Google Colab形式のノートブック</a>として提供されており、自身の環境で簡単に実行できます。Google Colabで開いて、そのまま実行することが可能です。</p>
+            </div>
+            
+            <h3>YouTubeリストからCSVをダウンロード</h3>
+            <p>開発者モードが有効になると、YouTubeプレイリストIDを指定してCSVファイルを直接ダウンロードできます。</p>
+            
+            <h4>使用方法</h4>
+            <ol>
+                <li>アプリバーの右上にある「📥 YouTubeリストからCSVをダウンロード」ボタンをクリック</li>
+                <li>YouTubeプレイリストIDを入力（PLから始まるID。例：PLw6tV8gK-20tVH2w-ZK-SAZ5lErzMLrj5）</li>
+                <li>「ダウンロード」をクリック</li>
+                <li>CSVファイルがダウンロードされます</li>
+            </ol>
+            
+            <div class="info-box">
+                <p><strong>💡 便利な機能</strong>: CSVファイルを生成するPythonスクリプト（<code>fetch_comments.py</code>）は、<a href="https://github.com/LiFE-124C41/uta_picker/blob/main/script/uta_picker_script.ipynb" target="_blank">Google Colab形式のノートブック</a>として提供されており、自身の環境で簡単に実行できます。Google Colabで開いて、そのまま実行することが可能です。</p>
+            </div>
+            
+            <h3>音声重視モード</h3>
+            <div class="warning-box">
+                <p><strong>⚠️ 注意</strong>: 音声重視モードは現在正常に動作していないことが確認されています。この機能を使用しても期待通りの動作をしない可能性があります。</p>
+            </div>
+            <p>開発者モードが有効になると、音声重視モード（低解像度）を有効にできます。これにより、データ使用量を抑えながら音声を重視した再生が可能になります。</p>
+            
+            <h4>使用方法</h4>
+            <ol>
+                <li>アプリバーの右上にある「🎵 音声重視モード」ボタンをクリック</li>
+                <li>モードが切り替わります（ボタンの色が青くなります）</li>
+                <li>再度クリックすると通常モードに戻ります</li>
+            </ol>
+            
+            <h3>開発者モードを無効にする方法</h3>
+            <div class="warning-box">
+                <p><strong>注意</strong>: 現在のバージョンでは、開発者モードを無効にする機能はありません。ページを再読み込みしても開発者モードは維持されます。完全に無効にするには、ブラウザのキャッシュをクリアする必要があります。</p>
+            </div>
+        </section>
+        
+        <footer>
+            <p><a href="index.html">← マニュアルトップに戻る</a></p>
+            <p>Uta(Gawa)Picker ユーザーマニュアル</p>
+            <p>最終更新: 2025年</p>
+        </footer>
+    </div>
+</body>
+</html>

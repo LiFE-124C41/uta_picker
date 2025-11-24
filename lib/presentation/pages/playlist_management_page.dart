@@ -349,7 +349,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('CSVファイルの読み込みに失敗しました: $e')),
+        SnackBar(content: Text('プレイリストファイルの読み込みに失敗しました: $e')),
       );
     }
   }
@@ -383,7 +383,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
         ..click();
       html.Url.revokeObjectUrl(url);
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('CSVファイルをダウンロードしました')));
+          .showSnackBar(SnackBar(content: Text('プレイリストファイルをダウンロードしました')));
     } else {
       final dir = await getApplicationSupportDirectory();
       final out = io_platform.File(

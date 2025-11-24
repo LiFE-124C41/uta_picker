@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../platform/stubs/io_stub.dart' if (dart.library.io) 'dart:io'
     as io_platform;
 import '../../../platform/stubs/html_stub.dart'
@@ -366,6 +367,36 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _openManual() async {
+    try {
+      // 相対パスでマニュアルを開く（ベースURLを考慮）
+      final manualUrl = Uri.base.resolve('docs/index.html');
+      if (kIsWeb) {
+        // Web版の場合は新しいタブで開く
+        if (await canLaunchUrl(manualUrl)) {
+          await launchUrl(manualUrl, mode: LaunchMode.externalApplication);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('マニュアルを開けませんでした')),
+          );
+        }
+      } else {
+        // デスクトップ版の場合はデフォルトブラウザで開く
+        if (await canLaunchUrl(manualUrl)) {
+          await launchUrl(manualUrl);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('マニュアルを開けませんでした')),
+          );
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('マニュアルを開く際にエラーが発生しました: $e')),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _timeUpdateTimer?.cancel();
@@ -670,6 +701,12 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 actions: [
+                  // マニュアルボタン
+                  IconButton(
+                    icon: Icon(Icons.help_outline),
+                    onPressed: _openManual,
+                    tooltip: 'ユーザーマニュアル',
+                  ),
                   // 音声のみモード切り替えボタン（Web + 開発者モードのみ）
                   if (kIsWeb && _isDeveloperModeEnabled)
                     IconButton(
@@ -724,7 +761,7 @@ class _HomePageState extends State<HomePage> {
                     IconButton(
                       icon: Icon(Icons.download),
                       onPressed: _showYoutubeListDownloadDialog,
-                      tooltip: 'YouTubeリストからCSVをダウンロード',
+                      tooltip: 'YouTubeリストからプレイリストをダウンロード',
                     ),
                 ],
               ),
