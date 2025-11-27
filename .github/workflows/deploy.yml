@@ -22,6 +22,9 @@ jobs:
       github.event.pull_request.merged == true && 
       startsWith(github.event.pull_request.head.ref, 'release/')
     steps:
+      - name: Remove Flutter action cache
+        run: rm -rf $HOME/.flutter
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
