@@ -7,7 +7,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write  # リリースを更新するため
   pages: write
   id-token: write
 
@@ -182,3 +182,115 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  create-release:
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0  # 全履歴を取得(タグ取得のため)
+
+      - name: Extract version from branch name
+        id: version
+        run: |
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          VERSION=${BRANCH_NAME#release/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Get previous release tag
+        id: previous_tag
+        run: |
+          # 前回のリリースタグを取得
+          PREVIOUS_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
+          
+          # 前回のタグが存在しない場合(初回リリース)は最初のコミットを使用
+          if [ -z "$PREVIOUS_TAG" ]; then
+            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+            echo "previous_tag=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
+            echo "Previous tag not found, using first commit: $PREVIOUS_TAG"
+          else
+            echo "previous_tag=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
+            echo "Previous tag: $PREVIOUS_TAG"
+          fi
+
+      - name: Create and push tag
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # mainブランチのマージコミットにタグを作成
+          git tag -a "v${{ steps.version.outputs.version }}" \
+            -m "Release v${{ steps.version.outputs.version }}" \
+            "${{ github.event.pull_request.merge_commit_sha }}"
+          
+          git push origin "v${{ steps.version.outputs.version }}"
+
+      - name: Get merged PRs between tags
+        id: get_prs
+        run: |
+          PREVIOUS_TAG="${{ steps.previous_tag.outputs.previous_tag }}"
+          CURRENT_TAG="v${{ steps.version.outputs.version }}"
+          
+          # 前回のタグの日時を取得
+          if git rev-parse "$PREVIOUS_TAG" >/dev/null 2>&1; then
+            PREVIOUS_DATE=$(git log -1 --format=%aI "$PREVIOUS_TAG")
+          else
+            # 初回リリースの場合はリポジトリの最初のコミットの日時
+            PREVIOUS_DATE=$(git log --reverse --format=%aI | head -n1)
+          fi
+          
+          echo "Getting PRs merged after $PREVIOUS_DATE"
+          
+          # GitHub CLIでマージ済みPRを取得
+          PR_LIST=$(gh pr list \
+            --state merged \
+            --base main \
+            --limit 100 \
+            --json number,title,mergedAt,author \
+            --search "merged:>=$PREVIOUS_DATE" \
+            --jq '.[] | "- \(.title) (#\(.number)) @\(.author.login)"' \
+            || echo "")
+          
+          # PR情報をファイルに保存(複数行対応)
+          if [ -z "$PR_LIST" ]; then
+            echo "No PRs found between $PREVIOUS_TAG and $CURRENT_TAG"
+            echo "pr_list=_No merged PRs in this release._" >> $GITHUB_OUTPUT
+          else
+            echo "Found PRs:"
+            echo "$PR_LIST"
+            # 複数行の出力をGITHUB_OUTPUTに保存
+            {
+              echo 'pr_list<<EOF'
+              echo "$PR_LIST"
+              echo 'EOF'
+            } >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          body: |
+            ## Release v${{ steps.version.outputs.version }}
+            
+            ### マージされたPR
+            
+            ${{ steps.get_prs.outputs.pr_list }}
+            
+            ---
+            
+            **リリース情報**
+            - バージョン: v${{ steps.version.outputs.version }}
+            - デプロイ日時: ${{ github.event.pull_request.merged_at }}
+            - 前回のリリース: ${{ steps.previous_tag.outputs.previous_tag }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
