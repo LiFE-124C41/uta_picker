@@ -3,7 +3,7 @@ name: Run Flutter Tests
 on:
   push:
     branches:
-      - '**'  # Run on all branches
+      - main  # mainブランチへの直接pushのみ
   pull_request:
     branches:
       - '**'
