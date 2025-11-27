@@ -93,14 +93,9 @@ jobs:
           git add pubspec.yaml
           git commit -m "Bump version to ${{ steps.version.outputs.new_version }}" || exit 0
 
-      - name: Create tag
-        run: |
-          git tag -a "v${{ steps.version.outputs.new_version }}" -m "Release v${{ steps.version.outputs.new_version }}"
-
-      - name: Push release branch and tag
+      - name: Push release branch
         run: |
           git push origin "${{ steps.branch.outputs.branch_name }}"
-          git push origin "v${{ steps.version.outputs.new_version }}"
 
       - name: Create Pull Request
         run: |
@@ -115,19 +110,8 @@ jobs:
           - バージョン: ${{ steps.current_version.outputs.current_version }} → ${{ steps.version.outputs.new_version }}
           - インクリメントタイプ: ${{ github.event.inputs.version_type || 'patch' }}
           
-          **注意**: このPRをマージすると、ビルドとデプロイが自動的に実行されます。" \
+          **注意**: このPRをマージすると、ビルドとデプロイが自動的に実行されます。
+          タグとGitHub Releaseはデプロイ完了後に自動的に作成されます。" \
             || echo "PR creation failed or PR already exists"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ steps.version.outputs.new_version }}
-          name: Release v${{ steps.version.outputs.new_version }}
-          body: |
-            ## Release v${{ steps.version.outputs.new_version }}
-            
-            Automated release created by GitHub Actions.
-          draft: false
-          prerelease: false
