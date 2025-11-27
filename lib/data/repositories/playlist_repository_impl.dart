@@ -7,10 +7,13 @@ import '../datasources/shared_preferences_datasource.dart';
 
 class PlaylistRepositoryImpl implements PlaylistRepository {
   final SharedPreferencesDataSource _sharedPreferences;
+  final bool _isWeb;
 
   PlaylistRepositoryImpl({
     required SharedPreferencesDataSource sharedPreferences,
-  }) : _sharedPreferences = sharedPreferences;
+    bool isWeb = kIsWeb,
+  })  : _sharedPreferences = sharedPreferences,
+        _isWeb = isWeb;
 
   Future<void> initialize() async {
     await _sharedPreferences.initialize();
@@ -18,7 +21,7 @@ class PlaylistRepositoryImpl implements PlaylistRepository {
 
   @override
   Future<List<PlaylistItem>> getPlaylist() async {
-    if (!kIsWeb) return [];
+    if (!_isWeb) return [];
     final playlistJson = await _sharedPreferences.getStringList('playlist');
     return playlistJson
         .map((json) =>
@@ -28,7 +31,7 @@ class PlaylistRepositoryImpl implements PlaylistRepository {
 
   @override
   Future<void> savePlaylist(List<PlaylistItem> playlist) async {
-    if (!kIsWeb) return;
+    if (!_isWeb) return;
     final playlistJson = playlist.map((p) => jsonEncode(p.toJson())).toList();
     await _sharedPreferences.setStringList('playlist', playlistJson);
   }
