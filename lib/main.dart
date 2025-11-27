@@ -19,12 +19,12 @@ void main() async {
     await AnalyticsService.initialize();
   } catch (e) {
     // Firebaseの初期化に失敗した場合でもアプリは動作する
-    print('Firebase initialization failed: $e');
+    debugPrint('Firebase initialization failed: $e');
   }
 
   // Initialize data sources
   final sharedPreferences = SharedPreferencesDataSource();
-  
+
   // Initialize repositories
   final playlistRepository = PlaylistRepositoryImpl(
     sharedPreferences: sharedPreferences,

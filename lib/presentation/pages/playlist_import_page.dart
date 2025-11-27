@@ -16,9 +16,9 @@ class PlaylistImportPage extends StatefulWidget {
   final PlaylistRepository playlistRepository;
 
   const PlaylistImportPage({
-    Key? key,
+    super.key,
     required this.playlistRepository,
-  }) : super(key: key);
+  });
 
   @override
   State<PlaylistImportPage> createState() => _PlaylistImportPageState();
@@ -165,6 +165,7 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
       // アナリティクス: JSONインポート
       AnalyticsService.logJsonImported(videoCount: videos.length);
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${videos.length}件の動画を読み込みました')),
       );
@@ -172,6 +173,7 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
       setState(() {
         isLoading = false;
       });
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('JSONファイルの読み込みに失敗しました: $e')),
       );
@@ -183,7 +185,6 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
       videos = [];
     });
   }
-
 
   /// 動画からプレイリストアイテムを作成するダイアログを表示
   Future<void> _showCreatePlaylistItemDialog(VideoItem video) async {
@@ -271,6 +272,7 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
       if (startSecStr.isNotEmpty) {
         startSec = TimeFormat.parseTimeString(startSecStr);
         if (startSec == null) {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 content: Text(
@@ -284,6 +286,7 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
       if (endSecStr.isNotEmpty) {
         endSec = TimeFormat.parseTimeString(endSecStr);
         if (endSec == null) {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 content: Text(
@@ -295,6 +298,7 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
 
       // 両方指定されている場合は、開始時刻 < 終了時刻をチェック
       if (startSec != null && endSec != null && startSec >= endSec) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('終了時刻は開始時刻より大きくしてください')),
         );
@@ -316,6 +320,7 @@ class _PlaylistImportPageState extends State<PlaylistImportPage> {
         startSec: item.startSec,
         endSec: item.endSec,
       );
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('プレイリストに追加しました')),
       );

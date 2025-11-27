@@ -21,9 +21,9 @@ class PlaylistManagementPage extends StatefulWidget {
   final PlaylistRepository playlistRepository;
 
   const PlaylistManagementPage({
-    Key? key,
+    super.key,
     required this.playlistRepository,
-  }) : super(key: key);
+  });
 
   @override
   State<PlaylistManagementPage> createState() => _PlaylistManagementPageState();
@@ -231,7 +231,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                         if (isEdit) {
                           // ignore: unnecessary_non_null_assertion
                           await widget.playlistRepository
-                              .updatePlaylistItem(index!, item);
+                              .updatePlaylistItem(index, item);
                         } else {
                           await widget.playlistRepository.addPlaylistItem(item);
                           // アナリティクス: プレイリストアイテム追加（管理画面から）
@@ -242,6 +242,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                           );
                         }
                         await _loadPlaylist();
+                        if (!dialogContext.mounted) return;
                         Navigator.pop(dialogContext, true);
                         return;
                       }
@@ -334,6 +335,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
       }
 
       if (importedPlaylist.isEmpty) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('有効なプレイリスト項目が見つかりませんでした')),
         );
@@ -344,10 +346,12 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
       await _loadPlaylist();
       // アナリティクス: CSVインポート
       AnalyticsService.logCsvImported(itemCount: importedPlaylist.length);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${importedPlaylist.length}件のプレイリスト項目を取り込みました')),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('プレイリストファイルの読み込みに失敗しました: $e')),
       );
@@ -356,6 +360,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
 
   Future<void> _exportPlaylistCsv() async {
     if (playlist.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('プレイリストが空です')),
       );
@@ -382,6 +387,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
         ..setAttribute('download', 'playlist_export.csv')
         ..click();
       html.Url.revokeObjectUrl(url);
+      if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('プレイリストファイルをダウンロードしました')));
     } else {
@@ -389,6 +395,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
       final out = io_platform.File(
           '${dir.path}${io_platform.Platform.pathSeparator}playlist_export.csv');
       await out.writeAsString(sb.toString());
+      if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Exported to ${out.path}')));
     }
