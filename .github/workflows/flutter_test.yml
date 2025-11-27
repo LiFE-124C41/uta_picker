@@ -1,0 +1,106 @@
+name: Run Flutter Tests
+
+on:
+  push:
+    branches:
+      - main  # mainブランチへの直接pushのみ
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Generate dummy api_config.dart
+        run: |
+          mkdir -p lib/core/config
+          cat > lib/core/config/api_config.dart << 'EOF'
+          // Dummy generated file for CI
+          import 'dart:convert';
+          
+          class ApiConfig {
+            // Dummy base64 encoded URL (https://example.com)
+            static const String _encodedEndpoint = 'aHR0cHM6Ly9leGFtcGxlLmNvbQ==';
+          
+            static String get endpoint {
+              final bytes = base64Decode(_encodedEndpoint);
+              return utf8.decode(bytes);
+            }
+          }
+          EOF
+
+      - name: Generate dummy firebase_options.dart
+        run: |
+          cat > lib/firebase_options.dart << 'EOF'
+          // Dummy generated file for CI
+          import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+          import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
+          
+          class DefaultFirebaseOptions {
+            static FirebaseOptions get currentPlatform {
+              if (kIsWeb) return web;
+              switch (defaultTargetPlatform) {
+                case TargetPlatform.android: return android;
+                case TargetPlatform.iOS: return ios;
+                case TargetPlatform.macOS: return macos;
+                case TargetPlatform.windows: throw UnsupportedError('Windows not configured');
+                case TargetPlatform.linux: throw UnsupportedError('Linux not configured');
+                default: throw UnsupportedError('Unsupported platform');
+              }
+            }
+          
+            static const FirebaseOptions web = FirebaseOptions(
+              apiKey: 'dummy-api-key',
+              appId: 'dummy-app-id',
+              messagingSenderId: 'dummy-sender-id',
+              projectId: 'dummy-project-id',
+              authDomain: 'dummy-auth-domain',
+              storageBucket: 'dummy-storage-bucket',
+            );
+          
+            static const FirebaseOptions android = FirebaseOptions(
+              apiKey: 'dummy-api-key',
+              appId: 'dummy-app-id',
+              messagingSenderId: 'dummy-sender-id',
+              projectId: 'dummy-project-id',
+              storageBucket: 'dummy-storage-bucket',
+            );
+          
+            static const FirebaseOptions ios = FirebaseOptions(
+              apiKey: 'dummy-api-key',
+              appId: 'dummy-app-id',
+              messagingSenderId: 'dummy-sender-id',
+              projectId: 'dummy-project-id',
+              storageBucket: 'dummy-storage-bucket',
+              iosBundleId: 'com.example.dummy',
+            );
+          
+            static const FirebaseOptions macos = FirebaseOptions(
+              apiKey: 'dummy-api-key',
+              appId: 'dummy-app-id',
+              messagingSenderId: 'dummy-sender-id',
+              projectId: 'dummy-project-id',
+              storageBucket: 'dummy-storage-bucket',
+              iosBundleId: 'com.example.dummy',
+            );
+          }
+          EOF
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test

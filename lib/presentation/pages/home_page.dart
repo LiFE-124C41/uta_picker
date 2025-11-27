@@ -3,7 +3,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/services.dart';
+
 import 'package:path_provider/path_provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -28,9 +28,9 @@ class HomePage extends StatefulWidget {
   final PlaylistRepository playlistRepository;
 
   const HomePage({
-    Key? key,
+    super.key,
     required this.playlistRepository,
-  }) : super(key: key);
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -287,6 +287,7 @@ class _HomePageState extends State<HomePage> {
       final out = io_platform.File(
           '${dir.path}${io_platform.Platform.pathSeparator}playlist_export.csv');
       await out.writeAsString(sb.toString());
+      if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Exported to ${out.path}')));
     }
@@ -377,6 +378,7 @@ class _HomePageState extends State<HomePage> {
         if (await canLaunchUrl(manualUrl)) {
           await launchUrl(manualUrl, mode: LaunchMode.externalApplication);
         } else {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('マニュアルを開けませんでした')),
           );
@@ -386,12 +388,14 @@ class _HomePageState extends State<HomePage> {
         if (await canLaunchUrl(manualUrl)) {
           await launchUrl(manualUrl);
         } else {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('マニュアルを開けませんでした')),
           );
         }
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('マニュアルを開く際にエラーが発生しました: $e')),
       );
@@ -422,7 +426,7 @@ class _HomePageState extends State<HomePage> {
             final isMobile = constraints.maxWidth < 600 ||
                 orientation == Orientation.portrait;
 
-            final left = Container(
+            final left = SizedBox(
               width: isMobile ? double.infinity : 320,
               child: Column(
                 children: [
@@ -784,7 +788,7 @@ class _HomePageState extends State<HomePage> {
                       children: [
                         // スマートフォン: 動画プレーヤーを上に、プレイリストを下に
                         Expanded(child: right),
-                        Container(
+                        SizedBox(
                           height: constraints.maxHeight * 0.4,
                           child: left,
                         ),
@@ -905,6 +909,7 @@ class _HomePageState extends State<HomePage> {
         final songTitle = songTitleController.text.trim();
 
         if (startSecStr.isEmpty || endSecStr.isEmpty) {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('開始時刻と終了時刻は必須です')),
           );
@@ -915,6 +920,7 @@ class _HomePageState extends State<HomePage> {
         final endSec = TimeFormat.parseTimeString(endSecStr);
 
         if (startSec == null || endSec == null) {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 content: Text(
@@ -924,6 +930,7 @@ class _HomePageState extends State<HomePage> {
         }
 
         if (startSec >= endSec) {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('終了時刻は開始時刻より大きくしてください')),
           );
@@ -946,6 +953,7 @@ class _HomePageState extends State<HomePage> {
           startSec: item.startSec,
           endSec: item.endSec,
         );
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('プレイリストに追加しました')),
         );

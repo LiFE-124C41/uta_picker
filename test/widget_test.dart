@@ -1,30 +1,36 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:uta_picker/presentation/app.dart';
+import 'package:uta_picker/domain/repositories/playlist_repository.dart';
+import 'package:uta_picker/domain/entities/playlist_item.dart';
 
-import 'package:uta_picker/main.dart';
+class FakePlaylistRepository implements PlaylistRepository {
+  @override
+  Future<void> addPlaylistItem(PlaylistItem item) async {}
+
+  @override
+  Future<void> clearPlaylist() async {}
+
+  @override
+  Future<List<PlaylistItem>> getPlaylist() async => [];
+
+  @override
+  Future<void> removePlaylistItem(int index) async {}
+
+  @override
+  Future<void> savePlaylist(List<PlaylistItem> playlist) async {}
+
+  @override
+  Future<void> updatePlaylistItem(int index, PlaylistItem item) async {}
+}
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+  testWidgets('App smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(MyApp(
+      playlistRepository: FakePlaylistRepository(),
+    ));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify that the app builds without crashing.
+    expect(find.byType(MyApp), findsOneWidget);
   });
 }

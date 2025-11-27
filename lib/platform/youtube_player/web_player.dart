@@ -46,24 +46,24 @@ class WebPlayer {
   void _setupApiCallback() {
     try {
       js.context['onYouTubeIframeAPIReady'] = () {
-        print('YouTube IFrame API ready callback called');
+        debugPrint('YouTube IFrame API ready callback called');
         _isApiReady = true;
         _apiCheckTimer?.cancel();
         _apiCheckTimer = null;
         // 待機中のプレイヤー作成を実行
         _processPendingCreations();
       };
-      print('YouTube API callback set up');
+      debugPrint('YouTube API callback set up');
     } catch (e) {
-      print('Error setting up YouTube API callback: $e');
+      debugPrint('Error setting up YouTube API callback: $e');
     }
   }
 
   void _checkApiReady() {
     try {
-      final YT = js.context['YT'];
-      if (YT != null && !_isApiReady) {
-        print('YouTube IFrame API detected as ready');
+      final yt = js.context['YT'];
+      if (yt != null && !_isApiReady) {
+        debugPrint('YouTube IFrame API detected as ready');
         _isApiReady = true;
         _apiCheckTimer?.cancel();
         _apiCheckTimer = null;
@@ -78,7 +78,8 @@ class WebPlayer {
   void _processPendingCreations() {
     if (_pendingCreations.isEmpty) return;
 
-    print('Processing ${_pendingCreations.length} pending player creation(s)');
+    debugPrint(
+        'Processing ${_pendingCreations.length} pending player creation(s)');
     final pending = List<_PendingPlayerCreation>.from(_pendingCreations);
     _pendingCreations.clear();
 
@@ -97,7 +98,7 @@ class WebPlayer {
   void _startApiPolling() {
     if (_apiCheckTimer != null || _isApiReady) return;
 
-    print('Starting API polling...');
+    debugPrint('Starting API polling...');
     _apiCheckTimer = Timer.periodic(Duration(milliseconds: 500), (timer) {
       _checkApiReady();
       if (_isApiReady) {
@@ -153,7 +154,8 @@ class WebPlayer {
     _checkApiReady();
 
     if (!_isApiReady) {
-      print('YouTube IFrame API not loaded yet, queuing player creation...');
+      debugPrint(
+          'YouTube IFrame API not loaded yet, queuing player creation...');
       // 待機リストに追加
       _pendingCreations.add(_PendingPlayerCreation(
         videoId: videoId,
@@ -172,7 +174,7 @@ class WebPlayer {
           ..src = 'https://www.youtube.com/iframe_api'
           ..async = true;
         html.document.head!.append(script);
-        print('YouTube IFrame API script loading...');
+        debugPrint('YouTube IFrame API script loading...');
       }
 
       // ポーリングを開始
@@ -195,14 +197,14 @@ class WebPlayer {
     if (!kIsWeb) return;
 
     try {
-      final YT = js.context['YT'];
+      final yt = js.context['YT'];
 
-      if (YT == null) {
-        print('YouTube IFrame API still not available');
+      if (yt == null) {
+        debugPrint('YouTube IFrame API still not available');
         return;
       }
 
-      print('YouTube IFrame API found, creating player...');
+      debugPrint('YouTube IFrame API found, creating player...');
 
       // 既存のプレイヤーがあれば破棄
       if (_youtubePlayer != null) {
@@ -210,7 +212,7 @@ class WebPlayer {
           (_youtubePlayer as js.JsObject).callMethod('destroy');
           _youtubePlayer = null;
         } catch (e) {
-          print('Error destroying player: $e');
+          debugPrint('Error destroying player: $e');
         }
       }
 
@@ -224,7 +226,7 @@ class WebPlayer {
       final displayDiv =
           html.document.getElementById('youtube-player-display-div');
       if (displayDiv == null) {
-        print('Display div not found, preparing...');
+        debugPrint('Display div not found, preparing...');
         prepareDisplayDiv();
         Future.delayed(Duration(milliseconds: 100), () {
           _createPlayerInternal(
@@ -255,7 +257,7 @@ class WebPlayer {
       if (audioOnly) {
         playerVars['quality'] = 'tiny'; // 最低解像度（144p相当）
         playerVars['controls'] = 0; // コントロールを非表示
-        print('Audio-only mode: Using lowest quality to reduce bandwidth');
+        debugPrint('Audio-only mode: Using lowest quality to reduce bandwidth');
       }
 
       // 新しいプレイヤーを作成
@@ -267,29 +269,10 @@ class WebPlayer {
             try {
               final player = (event as js.JsObject)['target'];
               // 音声のみモードの場合、解像度を最低に設定
-              if (audioOnly) {
-                try {
-                  player.callMethod('setPlaybackQuality', ['tiny']);
-                  // 少し遅延してから再度設定（YouTubeが自動的に品質を変更する場合があるため）
-                  Future.delayed(Duration(milliseconds: 500), () {
-                    try {
-                      player.callMethod('setPlaybackQuality', ['tiny']);
-                    } catch (e) {
-                      print('Error setting playback quality (delayed): $e');
-                    }
-                  });
-                } catch (e) {
-                  print('Error setting playback quality: $e');
-                }
-              }
-              if (startSec != null) {
-                player.callMethod('seekTo', [startSec, true]);
-              }
-              player.callMethod('playVideo');
               monitorPlaybackTime(
                   player, startSec, endSec, onTimeUpdate, onEnded);
             } catch (e) {
-              print('Error in onReady: $e');
+              debugPrint('Error in onReady: $e');
             }
           },
           'onStateChange': (event) {
@@ -314,7 +297,7 @@ class WebPlayer {
                     // 品質チェックタイマーを開始
                     _startQualityCheckTimer(player);
                   } catch (e) {
-                    print(
+                    debugPrint(
                         'Error setting playback quality in onStateChange: $e');
                   }
                 }
@@ -322,7 +305,7 @@ class WebPlayer {
                     player, startSec, endSec, onTimeUpdate, onEnded);
               }
             } catch (e) {
-              print('Error in onStateChange: $e');
+              debugPrint('Error in onStateChange: $e');
             }
           },
           'onPlaybackQualityChange': (event) {
@@ -332,35 +315,35 @@ class WebPlayer {
                 final jsEvent = event as js.JsObject;
                 final player = jsEvent['target'];
                 final quality = jsEvent['data'];
-                print('Playback quality changed to: $quality');
+                debugPrint('Playback quality changed to: $quality');
                 // tiny以外の品質に変更された場合は再度tinyに設定
                 if (quality != null &&
                     quality != 'tiny' &&
                     quality != 'small') {
-                  print('Forcing quality back to tiny...');
+                  debugPrint('Forcing quality back to tiny...');
                   player.callMethod('setPlaybackQuality', ['tiny']);
                 }
               } catch (e) {
-                print('Error handling playback quality change: $e');
+                debugPrint('Error handling playback quality change: $e');
               }
             }
           },
           'onError': (event) {
             final jsEvent = event as js.JsObject;
-            print('YouTube player error: ${jsEvent['data']}');
+            debugPrint('YouTube player error: ${jsEvent['data']}');
           },
         },
       });
 
-      final PlayerConstructor = YT['Player'];
-      _youtubePlayer = js.JsObject(PlayerConstructor, [apiDivId, playerConfig]);
+      final playerConstructor = yt['Player'];
+      _youtubePlayer = js.JsObject(playerConstructor, [apiDivId, playerConfig]);
 
       _currentVideoId = videoId;
       _currentAudioOnlyMode = audioOnly;
-      print(
+      debugPrint(
           'YouTube player created for video: $videoId (audioOnly: $audioOnly)');
     } catch (e) {
-      print('Error creating YouTube player: $e');
+      debugPrint('Error creating YouTube player: $e');
     }
   }
 
@@ -382,7 +365,7 @@ class WebPlayer {
             currentQuality != 'tiny' &&
             currentQuality != 'small' &&
             currentQuality != 'medium') {
-          print('Quality is $currentQuality, forcing to tiny...');
+          debugPrint('Quality is $currentQuality, forcing to tiny...');
           jsPlayer.callMethod('setPlaybackQuality', ['tiny']);
         }
       } catch (e) {
@@ -420,12 +403,12 @@ class WebPlayer {
           try {
             jsPlayer.callMethod('stopVideo');
           } catch (e) {
-            print('Error stopping video: $e');
+            debugPrint('Error stopping video: $e');
             // stopVideoが失敗した場合は、pauseVideoを試す
             try {
               jsPlayer.callMethod('pauseVideo');
             } catch (e2) {
-              print('Error pausing video: $e2');
+              debugPrint('Error pausing video: $e2');
             }
           }
           _playbackTimer?.cancel();
@@ -440,7 +423,7 @@ class WebPlayer {
           }
         }
       } catch (e) {
-        print('Error monitoring playback time: $e');
+        debugPrint('Error monitoring playback time: $e');
         _playbackTimer?.cancel();
         _playbackTimer = null;
       }
@@ -560,7 +543,7 @@ class WebPlayer {
         }
       }
     } catch (e) {
-      print('Error disabling pointer events: $e');
+      debugPrint('Error disabling pointer events: $e');
     }
   }
 
@@ -584,7 +567,7 @@ class WebPlayer {
         }
       }
     } catch (e) {
-      print('Error enabling pointer events: $e');
+      debugPrint('Error enabling pointer events: $e');
     }
   }
 }

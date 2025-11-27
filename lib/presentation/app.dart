@@ -10,9 +10,9 @@ class MyApp extends StatelessWidget {
   final PlaylistRepository playlistRepository;
 
   const MyApp({
-    Key? key,
+    super.key,
     required this.playlistRepository,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -5,18 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Flutter Web (Chrome)",
             "type": "dart",
             "request": "launch",
-            "name": "Flutter (Android)",
             "program": "lib/main.dart",
-            "flutterMode": "debug"
+            "deviceId": "chrome"
         },
         {
-            "type": "chrome",
+            "name": "Flutter Web (IDX Preview)",
+            "type": "dart",
             "request": "launch",
-            "name": "Launch Chrome against localhost",
-            "url": "http://localhost:8080",
-            "webRoot": "${workspaceFolder}"
+            "program": "lib/main.dart",
+            "deviceId": "web-server"
         }
     ]
 }

@@ -5,7 +5,8 @@ import 'package:flutter/widgets.dart';
 
 class WebViewController {
   void setJavaScriptMode(dynamic mode) {}
-  void addJavaScriptChannel(String name, {required Function(dynamic) onMessageReceived}) {}
+  void addJavaScriptChannel(String name,
+      {required Function(dynamic) onMessageReceived}) {}
   Future<void> loadRequest(Uri uri) async {}
   Future<void> runJavaScript(String code) async {}
 }
@@ -22,11 +23,10 @@ class JavaScriptMessage {
 
 class WebViewWidget extends Widget {
   final dynamic controller;
-  WebViewWidget({required this.controller});
-  
+  const WebViewWidget({super.key, required this.controller});
+
   @override
   Element createElement() {
     throw UnimplementedError('WebViewWidget not available on web');
   }
 }
-
