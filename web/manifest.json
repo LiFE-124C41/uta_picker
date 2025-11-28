@@ -1,6 +1,6 @@
 {
-    "name": "uta_picker",
-    "short_name": "uta_picker",
+    "name": "UtaPicker",
+    "short_name": "UtaPicker",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#ffffff",
