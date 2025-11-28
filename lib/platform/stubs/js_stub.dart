@@ -3,7 +3,7 @@
 // This file is used when compiling for non-web platforms to avoid import errors
 
 class JsObject {
-  JsObject([dynamic object, List? args]);
+  JsObject(dynamic object, [List? args]);
 
   dynamic callMethod(String method, [List? args]) => null;
   dynamic operator [](String key) => null;

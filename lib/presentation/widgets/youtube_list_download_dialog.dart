@@ -151,44 +151,42 @@ Future<void> downloadCsvFromYoutubeList(
           ..setAttribute('download', 'youtube_list_$playlistId.csv')
           ..click();
         html.Url.revokeObjectUrl(url);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('プレイリストファイルをダウンロードしました')),
-          );
-        }
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('プレイリストファイルをダウンロードしました')),
+        );
       } else {
         // デスクトップ版: ファイルに保存
         final dir = await getApplicationSupportDirectory();
         final file = io_platform.File(
             '${dir.path}${io_platform.Platform.pathSeparator}youtube_list_$playlistId.csv');
         await file.writeAsString(csvContent);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('プレイリストファイルを保存しました: ${file.path}')),
-          );
-        }
-      }
-    } else {
-      if (context.mounted) {
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                'エラーが発生しました: ${response.statusCode} ${response.reasonPhrase}'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('プレイリストファイルを保存しました: ${file.path}')),
         );
       }
-    }
-  } on TimeoutException catch (e) {
-    if (context.mounted) {
-      Navigator.pop(context); // ローディングを閉じる
+    } else {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('タイムアウト: ${e.message}'),
+          content: Text(
+              'エラーが発生しました: ${response.statusCode} ${response.reasonPhrase}'),
           backgroundColor: Colors.red,
         ),
       );
     }
+  } on TimeoutException catch (e) {
+    if (context.mounted) {
+      Navigator.pop(context); // ローディングを閉じる
+    }
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('タイムアウト: ${e.message}'),
+        backgroundColor: Colors.red,
+      ),
+    );
   } on http.ClientException catch (e) {
     if (context.mounted) {
       Navigator.pop(context); // ローディングを閉じる
@@ -201,15 +199,14 @@ Future<void> downloadCsvFromYoutubeList(
       errorMessage += '\nCORSエラーの可能性があります。サーバー側のCORS設定を確認してください。';
     }
     errorMessage += '\n${e.message}';
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 8),
-        ),
-      );
-    }
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(errorMessage),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 8),
+      ),
+    );
   } catch (e, stackTrace) {
     if (context.mounted) {
       Navigator.pop(context); // ローディングを閉じる
@@ -218,14 +215,13 @@ Future<void> downloadCsvFromYoutubeList(
       print('エラー詳細: $e');
       print('スタックトレース: $stackTrace');
     }
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('エラーが発生しました: $e'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 5),
-        ),
-      );
-    }
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('エラーが発生しました: $e'),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 5),
+      ),
+    );
   }
 }
