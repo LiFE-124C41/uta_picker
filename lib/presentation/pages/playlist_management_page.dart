@@ -360,7 +360,6 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
 
   Future<void> _exportPlaylistCsv() async {
     if (playlist.isEmpty) {
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('プレイリストが空です')),
       );
@@ -387,7 +386,6 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
         ..setAttribute('download', 'playlist_export.csv')
         ..click();
       html.Url.revokeObjectUrl(url);
-      if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('プレイリストファイルをダウンロードしました')));
     } else {

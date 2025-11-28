@@ -269,6 +269,28 @@ class WebPlayer {
             try {
               final player = (event as js.JsObject)['target'];
               // 音声のみモードの場合、解像度を最低に設定
+              if (audioOnly) {
+                try {
+                  player.callMethod('setPlaybackQuality', ['tiny']);
+                  // 少し遅延してから再度設定（YouTubeが自動的に品質を変更する場合があるため）
+                  Future.delayed(Duration(milliseconds: 500), () {
+                    try {
+                      player.callMethod('setPlaybackQuality', ['tiny']);
+                    } catch (e) {
+                      debugPrint(
+                          'Error setting playback quality (delayed): $e');
+                    }
+                  });
+                } catch (e) {
+                  debugPrint('Error setting playback quality: $e');
+                }
+              }
+              if (startSec != null) {
+                player.callMethod('seekTo', [startSec, true]);
+              }
+              // 自動再生を開始（これが重要）
+              player.callMethod('playVideo');
+
               monitorPlaybackTime(
                   player, startSec, endSec, onTimeUpdate, onEnded);
             } catch (e) {
