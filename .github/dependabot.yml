@@ -1,0 +1,13 @@
+version: 2
+updates:
+  # Maintain dependencies for Dart/Flutter
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
