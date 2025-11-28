@@ -24,7 +24,7 @@ jobs:
       version: ${{ steps.version.outputs.new_version }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0  # 全履歴を取得（タグ作成のため）
 
