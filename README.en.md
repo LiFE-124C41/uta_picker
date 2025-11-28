@@ -23,11 +23,16 @@ The web version of this application is published at the following URL:
 
 - **Video Playback**: Play YouTube videos within the app using iframe
 - **Playlist Creation**: Create playlist items by specifying start and end times of videos
-- **Playlist Playback**: Continuously play created playlists
+- **Playlist Playback**:
+  - Continuously play created playlists
+  - **Repeat**: Supports single track repeat and full playlist repeat
+  - **Shuffle**: Play the playlist in a random order
+- **Playlist Management**: Add, edit, delete, and reorder playlist items
 - **Data Storage**: Save playlists to SharedPreferences
 - **CSV Export/Import**: Export and import playlists in CSV format
-- **Playlist Management**: Add, edit, delete, and reorder playlist items
 - **YouTube URL Parser**: Automatically extract video ID from YouTube URLs
+- **Responsive UI**: Optimized for various screen sizes, including PCs and smartphones
+- **User Manual**: Access the user manual from within the app
 - **Firebase Analytics**: Track app usage (optional)
 
 ## Requirements
@@ -96,9 +101,16 @@ flutter run
 
 ### 5. Play Playlist
 
-1. Select an item from the playlist on the left to play
-2. Or, click the "Play" button (▶️ icon) on the playlist to play continuously
-3. During continuous playback, you can stop using the "Stop" button (⏹️ icon)
+1. **Playback Controls**:
+   - ▶️ **Play**: Start continuous playback of the playlist.
+   - ⏹️ **Stop**: Stop continuous playback.
+   - 🔁 **Repeat**: Toggle repeat mode: "No Repeat" -> "Repeat One" -> "Repeat All".
+   - 🔀 **Shuffle**: Enable/disable shuffle playback for the playlist.
+2. **Individual Playback**:
+   - Selecting an item from the playlist will play that song.
+3. **Header Icons**:
+   - 🔄 **Reload** (Web only): Reload the page.
+   - ❓ **User Manual**: Open the user manual for instructions.
 
 ### 6. Manage Playlist
 
@@ -109,6 +121,8 @@ flutter run
 ## Other Features
 
 - **Playlist Management**: Add, edit, delete, and reorder items
+- **Repeat Playback**: Single track repeat and full playlist repeat
+- **Shuffle Playback**: Random playback of the playlist
 - **CSV Import**: Bulk import playlists from CSV files
 - **CSV Export**: Export playlists in CSV format
 - **Audio-Focused Mode** (Developer mode only): Playback mode with low resolution focused on audio
@@ -176,6 +190,10 @@ uta_picker/
 │           ├── csv_import.dart      # CSV import
 │           ├── time_format.dart     # Time format
 │           └── youtube_url_parser.dart  # YouTube URL parser
+├── assets/
+│   └── logo.png                     # Application logo
+├── docs/
+│   └── index.html                   # User manual
 ├── script/
 │   ├── fetch_videos.py              # YouTube video information retrieval script
 │   ├── fetch_comments.py            # YouTube comments retrieval script
