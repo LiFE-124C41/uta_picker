@@ -18,7 +18,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Uta(Gawa)Picker',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        fontFamily: 'Torono Glitch Sans',
+      ),
       navigatorObservers: [
         if (AnalyticsService.observer != null) AnalyticsService.observer!,
       ],
