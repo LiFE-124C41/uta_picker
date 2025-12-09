@@ -23,6 +23,18 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    - assets/fonts/瀞ノグリッチ/
+  fonts:
+    - family: Torono Glitch Sans
+      fonts:
+        - asset: assets/fonts/瀞ノグリッチ/瀞ノグリッチ黒体H1.otf
+          weight: 300
+        - asset: assets/fonts/瀞ノグリッチ/瀞ノグリッチ黒体H2.otf
+          weight: 400
+        - asset: assets/fonts/瀞ノグリッチ/瀞ノグリッチ黒体H3.otf
+          weight: 700
+        - asset: assets/fonts/瀞ノグリッチ/瀞ノグリッチ黒体H4.otf
+          weight: 900
 
 dev_dependencies:
   flutter_test:
