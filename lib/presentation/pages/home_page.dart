@@ -486,7 +486,9 @@ class _HomePageState extends State<HomePage> {
                                     onPressed: () {
                                       setState(() {
                                         _shuffleMode = !_shuffleMode;
-                                        if (!_shuffleMode) {
+                                        if (_shuffleMode) {
+                                          _shufflePlaylist();
+                                        } else {
                                           _shuffledIndices = null;
                                         }
                                       });
