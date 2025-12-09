@@ -1,8 +1,7 @@
 name: Deploy to GitHub Pages
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches:
       - main
 
@@ -10,25 +9,67 @@ permissions:
   contents: write  # リリースを更新するため
   pages: write
   id-token: write
+  pull-requests: read # PR情報を取得するため
 
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  build:
+  check-release:
     runs-on: ubuntu-latest
-    if: |
-      github.event.pull_request.merged == true && 
-      startsWith(github.event.pull_request.head.ref, 'release/')
+    outputs:
+      is_release: ${{ steps.check.outputs.is_release }}
+      version: ${{ steps.check.outputs.version }}
+      pr_number: ${{ steps.check.outputs.pr_number }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check if merge commit from release branch
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 現在のコミット(GitHub SHA)に対応するマージ済みPRを検索
+          # mainブランチへのpush時、github.shaはマージコミットを指す
+          
+          echo "Searching for PR associated with commit ${{ github.sha }}..."
+          
+          # JSONで必要なフィールドのみ取得
+          # --search sha でそのコミットを含むPRを検索（マージコミットで検索可能）
+          PRS=$(gh pr list \
+            --search "${{ github.sha }}" \
+            --state merged \
+            --json number,headRefName \
+            --limit 1)
+            
+          echo "Found PRs: $PRS"
+          
+          HEAD_REF=$(echo "$PRS" | jq -r '.[0].headRefName')
+          PR_NUMBER=$(echo "$PRS" | jq -r '.[0].number')
+          
+          if [[ "$HEAD_REF" == release/* ]]; then
+            echo "Detected release PR: $HEAD_REF (#$PR_NUMBER)"
+            echo "is_release=true" >> $GITHUB_OUTPUT
+            
+            # extract version "release/v1.0.0" -> "1.0.0"
+            VERSION=${HEAD_REF#release/v}
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          else
+            echo "Not a release PR merge commit (HeadRef: $HEAD_REF)"
+            echo "is_release=false" >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    needs: check-release
+    if: ${{ needs.check-release.outputs.is_release == 'true' }}
+    runs-on: ubuntu-latest
     steps:
       - name: Remove Flutter action cache
         run: rm -rf $HOME/.flutter
 
       - name: Checkout repository
         uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -161,7 +202,6 @@ jobs:
 
       - name: Build web
         # リポジトリ名が異なる場合は、"/uta_picker/"の部分を変更してください
-        # 例: リポジトリ名が "my-app" の場合 → "/my-app/"
         run: flutter build web --base-href "/uta_picker/" --release
 
       - name: Copy docs to build/web
@@ -188,7 +228,7 @@ jobs:
 
   create-release:
     runs-on: ubuntu-latest
-    needs: deploy
+    needs: [deploy, check-release]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -196,21 +236,11 @@ jobs:
           ref: main
           fetch-depth: 0  # 全履歴を取得(タグ取得のため)
 
-      - name: Extract version from branch name
-        id: version
-        run: |
-          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
-          VERSION=${BRANCH_NAME#release/v}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Extracted version: $VERSION"
-
       - name: Get previous release tag
         id: previous_tag
         run: |
-          # 前回のリリースタグを取得
           PREVIOUS_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
           
-          # 前回のタグが存在しない場合(初回リリース)は最初のコミットを使用
           if [ -z "$PREVIOUS_TAG" ]; then
             PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
             echo "previous_tag=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
@@ -225,30 +255,28 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # mainブランチのマージコミットにタグを作成
-          git tag -a "v${{ steps.version.outputs.version }}" \
-            -m "Release v${{ steps.version.outputs.version }}" \
-            "${{ github.event.pull_request.merge_commit_sha }}"
+          VERSION="${{ needs.check-release.outputs.version }}"
           
-          git push origin "v${{ steps.version.outputs.version }}"
+          git tag -a "v$VERSION" \
+            -m "Release v$VERSION" \
+            "${{ github.sha }}"
+          
+          git push origin "v$VERSION"
 
       - name: Get merged PRs between tags
         id: get_prs
         run: |
           PREVIOUS_TAG="${{ steps.previous_tag.outputs.previous_tag }}"
-          CURRENT_TAG="v${{ steps.version.outputs.version }}"
+          CURRENT_TAG="v${{ needs.check-release.outputs.version }}"
           
-          # 前回のタグの日時を取得
           if git rev-parse "$PREVIOUS_TAG" >/dev/null 2>&1; then
             PREVIOUS_DATE=$(git log -1 --format=%aI "$PREVIOUS_TAG")
           else
-            # 初回リリースの場合はリポジトリの最初のコミットの日時
             PREVIOUS_DATE=$(git log --reverse --format=%aI | head -n1)
           fi
           
           echo "Getting PRs merged after $PREVIOUS_DATE"
           
-          # GitHub CLIでマージ済みPRを取得
           PR_LIST=$(gh pr list \
             --state merged \
             --base main \
@@ -258,14 +286,12 @@ jobs:
             --jq '.[] | "- \(.title) (#\(.number)) @\(.author.login)"' \
             || echo "")
           
-          # PR情報をファイルに保存(複数行対応)
           if [ -z "$PR_LIST" ]; then
             echo "No PRs found between $PREVIOUS_TAG and $CURRENT_TAG"
             echo "pr_list=_No merged PRs in this release._" >> $GITHUB_OUTPUT
           else
             echo "Found PRs:"
             echo "$PR_LIST"
-            # 複数行の出力をGITHUB_OUTPUTに保存
             {
               echo 'pr_list<<EOF'
               echo "$PR_LIST"
@@ -278,10 +304,10 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: Release v${{ steps.version.outputs.version }}
+          tag_name: v${{ needs.check-release.outputs.version }}
+          name: Release v${{ needs.check-release.outputs.version }}
           body: |
-            ## Release v${{ steps.version.outputs.version }}
+            ## Release v${{ needs.check-release.outputs.version }}
             
             ### マージされたPR
             
@@ -290,8 +316,8 @@ jobs:
             ---
             
             **リリース情報**
-            - バージョン: v${{ steps.version.outputs.version }}
-            - デプロイ日時: ${{ github.event.pull_request.merged_at }}
+            - バージョン: v${{ needs.check-release.outputs.version }}
+            - デプロイ日時: ${{ github.event.head_commit.timestamp }}
             - 前回のリリース: ${{ steps.previous_tag.outputs.previous_tag }}
           draft: false
           prerelease: false
