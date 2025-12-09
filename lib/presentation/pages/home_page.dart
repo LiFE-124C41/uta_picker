@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -57,6 +58,10 @@ class _HomePageState extends State<HomePage> {
   late WebPlayer _webPlayer;
   late DesktopPlayer _desktopPlayer;
   Timer? _timeUpdateTimer;
+
+  final ItemScrollController _itemScrollController = ItemScrollController();
+  final ItemPositionsListener _itemPositionsListener =
+      ItemPositionsListener.create();
 
   @override
   void initState() {
@@ -248,8 +253,19 @@ class _HomePageState extends State<HomePage> {
       currentPlaylistIndex = nextIndex;
     });
 
+    _scrollToIndex(nextIndex);
+
     final item = playlist[nextIndex];
     _playTimeRange(item.videoId, item.startSec, item.endSec);
+  }
+
+  void _scrollToIndex(int index) {
+    if (_itemScrollController.isAttached) {
+      _itemScrollController.jumpTo(
+        index: index,
+        alignment: 0,
+      );
+    }
   }
 
   Future<void> exportCsv() async {
@@ -326,6 +342,8 @@ class _HomePageState extends State<HomePage> {
       isPlayingPlaylist = true;
       currentPlaylistIndex = startIndex;
     });
+
+    _scrollToIndex(startIndex);
 
     final item = playlist[startIndex];
     _playTimeRange(item.videoId, item.startSec, item.endSec);
@@ -486,7 +504,9 @@ class _HomePageState extends State<HomePage> {
                                     onPressed: () {
                                       setState(() {
                                         _shuffleMode = !_shuffleMode;
-                                        if (!_shuffleMode) {
+                                        if (_shuffleMode) {
+                                          _shufflePlaylist();
+                                        } else {
                                           _shuffledIndices = null;
                                         }
                                       });
@@ -529,8 +549,10 @@ class _HomePageState extends State<HomePage> {
                   ),
                   if (playlist.isNotEmpty)
                     Expanded(
-                      child: ListView.builder(
+                      child: ScrollablePositionedList.builder(
                         itemCount: playlist.length,
+                        itemScrollController: _itemScrollController,
+                        itemPositionsListener: _itemPositionsListener,
                         itemBuilder: (context, idx) {
                           final item = playlist[idx];
                           final isCurrent =
@@ -577,6 +599,7 @@ class _HomePageState extends State<HomePage> {
                                   isPlayingPlaylist = true;
                                   currentPlaylistIndex = idx;
                                 });
+                                _scrollToIndex(idx);
                                 _playTimeRange(
                                     item.videoId, item.startSec, item.endSec);
                               },
@@ -591,6 +614,7 @@ class _HomePageState extends State<HomePage> {
                                 isPlayingPlaylist = true;
                                 currentPlaylistIndex = idx;
                               });
+                              _scrollToIndex(idx);
                               _playTimeRange(
                                   item.videoId, item.startSec, item.endSec);
                             },

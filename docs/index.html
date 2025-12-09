@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Uta(Gawa)Picker ユーザーマニュアル</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="container">
         <header>
             <h1>Uta(Gawa)Picker ユーザーマニュアル</h1>
             <p>YouTube動画から開始時間と終了時間を指定して再生するためのアプリケーション</p>
         </header>
-        
+
         <nav>
             <ul>
                 <li><a href="#overview">概要</a></li>
@@ -26,11 +28,12 @@
                 <li><a href="disclaimer.html">免責事項</a></li>
             </ul>
         </nav>
-        
+
         <section id="overview">
             <h2>概要</h2>
-            <p>Uta(Gawa)Pickerは、YouTubeのアーカイブ動画（ライブ配信の録画など）から、動画内の各曲の開始時間と終了時間を指定してプレイリストを作成し、保存、再生することができるWebアプリケーションです。</p>
-            
+            <p>Uta(Gawa)Pickerは、YouTubeのアーカイブ動画（ライブ配信の録画など）から、動画内の各曲の開始時間と終了時間を指定してプレイリストを作成し、保存、再生することができるWebアプリケーションです。
+            </p>
+
             <div class="feature-box">
                 <h3>主な機能</h3>
                 <ul class="icon-list">
@@ -42,16 +45,17 @@
                 </ul>
             </div>
         </section>
-        
+
         <section id="getting-started">
             <h2>はじめに</h2>
-            
+
             <h3>アプリへのアクセス</h3>
             <p>Uta(Gawa)PickerのWeb版は以下のURLで公開されています：</p>
             <div class="info-box">
-                <p><strong>🔗 </strong><a href="https://life-124c41.github.io/uta_picker/" target="_blank" rel="noopener noreferrer">https://life-124c41.github.io/uta_picker/</a></p>
+                <p><strong>🔗 </strong><a href="https://life-124c41.github.io/uta_picker/" target="_blank"
+                        rel="noopener noreferrer">https://life-124c41.github.io/uta_picker/</a></p>
             </div>
-            
+
             <h3>TOP画面の構成</h3>
             <p>アプリを起動すると、以下のような画面が表示されます：</p>
             <ul>
@@ -64,7 +68,7 @@
                 <li><strong>上部</strong>: 動画プレーヤーエリア</li>
                 <li><strong>下部</strong>: プレイリスト表示エリア</li>
             </ul>
-            
+
             <div class="image-container">
                 <img src="images/startup.png" alt="TOP画面のスクリーンショット" class="screenshot">
                 <p class="image-caption">
@@ -73,13 +77,13 @@
                 </p>
             </div>
         </section>
-        
+
         <section id="basic-usage">
             <h2>基本的な使い方</h2>
-            
+
             <h3>1. プレイリストアイテムの追加</h3>
             <p>プレイリストに曲を追加するには、以下の手順を実行します：</p>
-            
+
             <h4>プレイリスト管理画面から追加</h4>
             <ol>
                 <li>右上の「⚙️ プレイリスト管理」ボタンをクリック</li>
@@ -87,7 +91,8 @@
                 <li>以下の情報を入力：
                     <ul>
                         <li><strong>動画URLまたはID（必須）</strong>: YouTubeの動画URLまたは動画ID（例: <code>dQw4w9WgXcQ</code>）</li>
-                        <li><strong>開始時刻</strong>（オプション）: 「分:秒」（例: <code>00:30</code>）または「時:分:秒」（例: <code>01:07:52</code>）形式。空欄の場合は動画の最初から再生されます</li>
+                        <li><strong>開始時刻</strong>（オプション）: 「分:秒」（例: <code>00:30</code>）または「時:分:秒」（例:
+                            <code>01:07:52</code>）形式。空欄の場合は動画の最初から再生されます</li>
                         <li><strong>終了時刻</strong>（オプション）: 同様の形式。空欄の場合は動画の最後まで再生されます</li>
                         <li><strong>動画タイトル</strong>（オプション）: YouTube動画のタイトル</li>
                         <li><strong>楽曲タイトル</strong>（オプション）: 曲名</li>
@@ -95,20 +100,20 @@
                 </li>
                 <li>「追加」をクリック</li>
             </ol>
-            
+
             <div class="info-box">
                 <p><strong>ヒント</strong>: 開始時刻と終了時刻を空欄にすると、動画の最初から最後まで再生されます。入力に誤りがある場合は、エラーメッセージが表示されます。</p>
             </div>
-            
+
             <h3>2. プレイリストの再生</h3>
             <p>プレイリストにアイテムが追加されると、以下の方法で再生できます：</p>
-            
+
             <h4>個別再生</h4>
             <ul>
                 <li>左側のプレイリストからアイテムをクリックするか、再生ボタン（▶️）をクリック</li>
                 <li>指定した時間範囲が自動的に再生されます</li>
             </ul>
-            
+
             <h4>連続再生</h4>
             <ol>
                 <li>プレイリストの上部にある「▶️ 再生」ボタンをクリック</li>
@@ -116,10 +121,10 @@
                 <li>各曲が終了すると、自動的に次の曲に進みます</li>
                 <li>「⏹️ 停止」ボタンで再生を停止できます</li>
             </ol>
-            
+
             <h3>3. 再生モードの設定</h3>
             <p>プレイリストの上部には、以下の再生モードを切り替えるボタンがあります：</p>
-            
+
             <table>
                 <tr>
                     <th>ボタン</th>
@@ -144,37 +149,37 @@
                 </tr>
             </table>
         </section>
-        
+
         <section id="playlist">
             <h2>プレイリスト機能</h2>
-            
+
             <h3>プレイリスト管理画面</h3>
             <p>右上の「⚙️ プレイリスト管理」ボタンをクリックすると、プレイリスト管理画面が開きます。</p>
-            
+
             <div class="image-container">
                 <img src="images/playlist.png" alt="プレイリスト管理画面のスクリーンショット" class="screenshot">
                 <p class="image-caption">
                     プレイリスト管理画面: プレイリストアイテムの追加、編集、削除、並び替えが可能です
                 </p>
             </div>
-            
+
             <h3>プレイリストアイテムの編集</h3>
             <ol>
                 <li>プレイリスト管理画面で、編集したいアイテムの「✏️ 編集」ボタンをクリック</li>
                 <li>表示されたダイアログで情報を変更</li>
                 <li>「更新」をクリック</li>
             </ol>
-            
+
             <h3>プレイリストアイテムの削除</h3>
             <ol>
                 <li>プレイリスト管理画面で、削除したいアイテムの「🗑️ 削除」ボタンをクリック</li>
                 <li>アイテムが即座に削除されます</li>
             </ol>
-            
+
             <div class="warning-box">
                 <p><strong>注意</strong>: 削除操作は取り消せません。バックアップ機能で事前にバックアップを取ることをお勧めします。</p>
             </div>
-            
+
             <h3>プレイリストアイテムの並び替え</h3>
             <p>プレイリスト管理画面では、アイテムをドラッグ&ドロップで並び替えることができます：</p>
             <ol>
@@ -183,33 +188,34 @@
                 <li>並び順は自動的に保存されます</li>
             </ol>
             <div class="info-box">
-                <p><strong>ヒント</strong>: ドラッグハンドルアイコンは、各プレイリストアイテムの左側に表示される2本の横線（<span style="font-size: 1.2em;">=</span>）のアイコンです。このアイコンを長押ししてからドラッグすることで、アイテムを移動できます。</p>
+                <p><strong>ヒント</strong>: ドラッグハンドルアイコンは、各プレイリストアイテムの左側に表示される2本の横線（<span
+                        style="font-size: 1.2em;">=</span>）のアイコンです。このアイコンを長押ししてからドラッグすることで、アイテムを移動できます。</p>
             </div>
-            
+
             <h3>プレイリストの全削除</h3>
             <p>プレイリスト管理画面の「🗑️ 全削除」ボタンをクリックすると、すべてのアイテムが削除されます。</p>
-            
+
             <div class="warning-box">
                 <p><strong>注意</strong>: この操作は取り消せません。実行前にバックアップを取ることをお勧めします。</p>
             </div>
         </section>
-        
+
         <section id="export-import">
             <h2>バックアップ/取り込み機能</h2>
-            
+
             <h3>バックアップ</h3>
             <p>プレイリストをファイルとしてバックアップできます。</p>
-            
+
             <h4>バックアップ方法</h4>
             <ol>
                 <li>プレイリスト管理画面を開く</li>
                 <li>「📥 バックアップ」ボタンをクリック</li>
                 <li>ファイルが自動的にダウンロードされます（ファイル名: <code>playlist_export.csv</code>）</li>
             </ol>
-            
+
             <h4>ファイルの形式</h4>
             <p>バックアップされるファイルには以下の列が含まれます：</p>
-            
+
             <table>
                 <tr>
                     <th>列名</th>
@@ -247,14 +253,15 @@
                     <td>https://youtu.be/dQw4w9WgXcQ?t=30</td>
                 </tr>
             </table>
-            
+
             <h3>取り込み</h3>
             <p>以前バックアップしたファイルや、同じ形式のファイルを取り込んでプレイリストを復元できます。</p>
-            
+
             <div class="info-box">
-                <p><strong>ファイル名について</strong>: ファイル名は自由ですが、拡張子は<code>.csv</code>である必要があります（例: <code>my_playlist.csv</code>、<code>backup_2025.csv</code>など）。</p>
+                <p><strong>ファイル名について</strong>: ファイル名は自由ですが、拡張子は<code>.csv</code>である必要があります（例:
+                    <code>my_playlist.csv</code>、<code>backup_2025.csv</code>など）。</p>
             </div>
-            
+
             <h4>取り込み方法</h4>
             <ol>
                 <li>プレイリスト管理画面を開く</li>
@@ -262,51 +269,51 @@
                 <li>取り込みたいファイルを選択（拡張子は<code>.csv</code>である必要があります）</li>
                 <li>ファイルが読み込まれ、プレイリストが更新されます</li>
             </ol>
-            
+
             <div class="info-box">
                 <p><strong>注意</strong>: 取り込みは、既存のプレイリストを完全に置き換えます。既存のプレイリストを保持したい場合は、事前にバックアップを取ってください。</p>
             </div>
-            
+
             <h4>ファイルの形式要件</h4>
             <ul>
                 <li>1行目はヘッダー行（列名）</li>
                 <li>必須列: <code>video_id</code></li>
-                <li>オプション列: <code>start_sec</code>, <code>end_sec</code>, <code>video_title</code>, <code>song_title</code></li>
+                <li>オプション列: <code>start_sec</code>, <code>end_sec</code>, <code>video_title</code>,
+                    <code>song_title</code></li>
                 <li><code>start_sec</code>と<code>end_sec</code>は数値（秒）で指定</li>
                 <li>無効な行は自動的にスキップされます</li>
             </ul>
-            
+
             <div class="info-box">
-                <p><strong>サンプルファイル</strong>: ファイル形式の参考として、<a href="samples/playlist_export.csv" download="playlist_export.csv">サンプルCSVファイルをダウンロード</a>できます。</p>
+                <p><strong>サンプルファイル</strong>: ファイル形式の参考として、<a href="samples/playlist_export.csv"
+                        download="playlist_export.csv">サンプルCSVファイルをダウンロード</a>できます。</p>
             </div>
         </section>
-        
+
         <section id="known-issues">
             <h2>既知の問題</h2>
             <p>現在、以下の不具合が確認されています。今後のバージョンで修正を予定しています。</p>
-            
+
             <h3>タブがアクティブでないと次の曲が再生されない</h3>
             <div class="warning-box">
                 <p><strong>問題</strong>: プレイリストの連続再生中に、ブラウザのタブがバックグラウンド（別のタブがアクティブ）になっていると、次の曲への自動再生が行われない場合があります。</p>
                 <p><strong>対処法</strong>: プレイリストを連続再生する際は、Uta(Gawa)Pickerのタブをフォアグラウンド（アクティブ）にしておいてください。</p>
             </div>
-            
+
             <h3>動画再生時に音声は鳴るが動画が表示されない</h3>
             <div class="warning-box">
                 <p><strong>問題</strong>: 動画を再生した際に、音声は再生されているが動画が表示されない（白画面が表示される）場合があります。</p>
-                <p><strong>対処法</strong>: ページをリロード（再読み込み）することで解消される可能性が高いです。ブラウザのリロードボタンをクリックするか、<code>F5</code>キー（Windows）または<code>Cmd+R</code>（Mac）を押してください。</p>
+                <p><strong>対処法</strong>:
+                    ページをリロード（再読み込み）することで解消される可能性が高いです。ブラウザのリロードボタンをクリックするか、<code>F5</code>キー（Windows）または<code>Cmd+R</code>（Mac）を押してください。
+                </p>
             </div>
-            
-            <h3>再生中にシャッフルモードを切り替えることが出来ない</h3>
-            <div class="warning-box">
-                <p><strong>問題</strong>: プレイリストの再生中にシャッフルモードを切り替えることができません。</p>
-                <p><strong>対処法</strong>: 一度停止してモードを切り替えてから再生してください。</p>
-            </div>
+
+
         </section>
-        
+
         <section id="faq">
             <h2>よくある質問</h2>
-            
+
             <h3>Q1: 時間の入力形式について</h3>
             <div class="feature-box">
                 <p><strong>A:</strong> 開始時刻と終了時刻は、以下の2つの形式で入力できます：</p>
@@ -316,12 +323,14 @@
                 </ul>
                 <p>どちらの形式でも正しく認識されます。</p>
             </div>
-            
+
             <h3>Q2: プレイリストはどこに保存されますか？</h3>
             <div class="feature-box">
-                <p><strong>A:</strong> プレイリストはブラウザのローカルストレージに自動保存されます。ブラウザのキャッシュをクリアすると、プレイリストも削除される可能性があります。重要なプレイリストは定期的にバックアップを取ることをお勧めします。</p>
+                <p><strong>A:</strong>
+                    プレイリストはブラウザのローカルストレージに自動保存されます。ブラウザのキャッシュをクリアすると、プレイリストも削除される可能性があります。重要なプレイリストは定期的にバックアップを取ることをお勧めします。
+                </p>
             </div>
-            
+
             <h3>Q3: 動画が再生されない場合はどうすればいいですか？</h3>
             <div class="feature-box">
                 <p><strong>A:</strong> 以下の点を確認してください：</p>
@@ -332,17 +341,19 @@
                     <li>ブラウザがYouTubeのiframe埋め込みを許可しているか</li>
                 </ul>
             </div>
-            
+
             <h3>Q4: プレイリストの最大アイテム数に制限はありますか？</h3>
             <div class="feature-box">
-                <p><strong>A:</strong> 理論的には制限はありませんが、ブラウザのローカルストレージの容量制限（通常5-10MB）に依存します。非常に多くのアイテムを追加する場合は、定期的にバックアップを取ることをお勧めします。</p>
+                <p><strong>A:</strong>
+                    理論的には制限はありませんが、ブラウザのローカルストレージの容量制限（通常5-10MB）に依存します。非常に多くのアイテムを追加する場合は、定期的にバックアップを取ることをお勧めします。</p>
             </div>
-            
+
             <h3>Q5: スマートフォンでも使用できますか？</h3>
             <div class="feature-box">
-                <p><strong>A:</strong> はい、Web版はスマートフォンのブラウザでも使用できます。画面幅が600px以下の場合、自動的にモバイルレイアウトに切り替わります（動画プレーヤーが上、プレイリストが下に表示されます）。</p>
+                <p><strong>A:</strong>
+                    はい、Web版はスマートフォンのブラウザでも使用できます。画面幅が600px以下の場合、自動的にモバイルレイアウトに切り替わります（動画プレーヤーが上、プレイリストが下に表示されます）。</p>
             </div>
-            
+
             <h3>Q6: バックアップしたファイルを手動で編集できますか？</h3>
             <div class="feature-box">
                 <p><strong>A:</strong> はい、バックアップしたファイルはテキストエディタやExcelなどで編集できます。ただし、以下の点に注意してください：</p>
@@ -353,19 +364,21 @@
                     <li>CSVファイルの形式（カンマ区切り、エスケープ処理など）を正しく保ってください</li>
                 </ul>
             </div>
-            
+
             <h3>Q7: 開発者モードについて詳しく知りたい</h3>
             <div class="feature-box">
                 <p><strong>A:</strong> 開発者モードの詳細については、<a href="developer-mode.html">開発者モードのページ</a>を参照してください。</p>
             </div>
         </section>
-        
+
         <footer>
             <p>Uta(Gawa)Picker ユーザーマニュアル</p>
             <p>最終更新: 2025年</p>
-            <p>アプリのバージョン情報は、開発者モードを有効にした後、アプリバーのタイトル下に表示されます。開発者モードの詳細については<a href="developer-mode.html">開発者モードのページ</a>を参照してください。</p>
+            <p>アプリのバージョン情報は、開発者モードを有効にした後、アプリバーのタイトル下に表示されます。開発者モードの詳細については<a
+                    href="developer-mode.html">開発者モードのページ</a>を参照してください。</p>
             <p><a href="disclaimer.html">免責事項</a></p>
         </footer>
     </div>
 </body>
+
 </html>
