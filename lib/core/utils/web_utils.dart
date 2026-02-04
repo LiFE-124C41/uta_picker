@@ -4,3 +4,11 @@ import 'web_utils_stub.dart' if (dart.library.html) 'web_utils_web.dart';
 void toggleFullScreen() {
   toggleFullScreenImpl();
 }
+
+void downloadCsv(String content, String fileName) {
+  downloadCsvImpl(content, fileName);
+}
+
+void reloadPage() {
+  reloadPageImpl();
+}
