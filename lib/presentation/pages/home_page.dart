@@ -10,9 +10,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../platform/stubs/io_stub.dart' if (dart.library.io) 'dart:io'
     as io_platform;
-import '../../../platform/stubs/html_stub.dart'
-    if (dart.library.html) 'dart:html' as html
-    show Blob, Url, AnchorElement, window;
 
 import '../../../domain/entities/video_item.dart';
 import '../../../domain/entities/playlist_item.dart';
@@ -22,6 +19,7 @@ import '../../../platform/youtube_player/web_player.dart';
 import '../../../platform/youtube_player/desktop_player.dart';
 import '../../../core/utils/csv_export.dart';
 import '../../../core/utils/time_format.dart';
+import '../../../core/utils/web_utils.dart';
 import '../../../core/services/analytics_service.dart';
 import '../widgets/youtube_list_download_dialog.dart';
 
@@ -290,12 +288,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     if (kIsWeb) {
-      final blob = html.Blob([sb.toString()], 'text/csv');
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      html.AnchorElement(href: url)
-        ..setAttribute('download', 'playlist_export.csv')
-        ..click();
-      html.Url.revokeObjectUrl(url);
+      downloadCsv(sb.toString(), 'playlist_export.csv');
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('プレイリストファイルをダウンロードしました')));
     } else {
@@ -422,7 +415,7 @@ class _HomePageState extends State<HomePage> {
 
   void _reloadPage() {
     if (kIsWeb) {
-      html.window.location.reload();
+      reloadPage();
     }
   }
 
@@ -745,6 +738,15 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 actions: [
+                  // フルスクリーンボタン（Web版のみ）
+                  if (kIsWeb)
+                    IconButton(
+                      icon: Icon(Icons.fullscreen),
+                      onPressed: () {
+                        toggleFullScreen();
+                      },
+                      tooltip: 'フルスクリーン',
+                    ),
                   // リロードボタン（Web版のみ）
                   if (kIsWeb)
                     IconButton(

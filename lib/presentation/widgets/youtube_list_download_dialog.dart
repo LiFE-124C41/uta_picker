@@ -6,9 +6,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import '../../../platform/stubs/io_stub.dart' if (dart.library.io) 'dart:io'
     as io_platform;
-import '../../../platform/stubs/html_stub.dart'
-    if (dart.library.html) 'dart:html' as html show Blob, Url, AnchorElement;
 import '../../../core/config/api_config.dart';
+import '../../../core/utils/web_utils.dart';
 
 /// YouTubeリストからCSVをダウンロードするダイアログを表示
 ///
@@ -144,13 +143,8 @@ Future<void> downloadCsvFromYoutubeList(
       final csvContent = response.body;
 
       if (kIsWeb) {
-        // Web版: Blobを使用してダウンロード
-        final blob = html.Blob([csvContent], 'text/csv;charset=utf-8');
-        final url = html.Url.createObjectUrlFromBlob(blob);
-        html.AnchorElement(href: url)
-          ..setAttribute('download', 'youtube_list_$playlistId.csv')
-          ..click();
-        html.Url.revokeObjectUrl(url);
+        // Web版: WebUtilsを使用してダウンロード
+        downloadCsv(csvContent, 'youtube_list_$playlistId.csv');
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('プレイリストファイルをダウンロードしました')),

@@ -6,12 +6,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../platform/stubs/io_stub.dart' if (dart.library.io) 'dart:io'
     as io_platform;
-import '../../../platform/stubs/html_stub.dart'
-    if (dart.library.html) 'dart:html' as html show Blob, Url, AnchorElement;
 
 import '../../../domain/entities/playlist_item.dart';
 import '../../../domain/repositories/playlist_repository.dart';
 import '../../../core/utils/csv_export.dart';
+import '../../../core/utils/web_utils.dart';
 import '../../../core/utils/csv_import.dart';
 import '../../../core/utils/time_format.dart';
 import '../../../core/utils/youtube_url_parser.dart';
@@ -380,12 +379,7 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
     }
 
     if (kIsWeb) {
-      final blob = html.Blob([sb.toString()], 'text/csv');
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      html.AnchorElement(href: url)
-        ..setAttribute('download', 'playlist_export.csv')
-        ..click();
-      html.Url.revokeObjectUrl(url);
+      downloadCsv(sb.toString(), 'playlist_export.csv');
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('プレイリストファイルをダウンロードしました')));
     } else {
