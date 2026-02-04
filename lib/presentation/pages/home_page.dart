@@ -565,15 +565,24 @@ class _HomePageState extends State<HomePage> {
                               item.videoTitle != item.songTitle) {
                             subtitleParts.add('動画: ${item.videoTitle}');
                           }
-                          final timeRangeStr = item.startSec != null &&
-                                  item.endSec != null
-                              ? '${TimeFormat.formatTimeString(item.startSec!)} - ${TimeFormat.formatTimeString(item.endSec!)}'
-                              : item.startSec != null
-                                  ? '${TimeFormat.formatTimeString(item.startSec!)} - 最後まで'
-                                  : item.endSec != null
-                                      ? '最初から - ${TimeFormat.formatTimeString(item.endSec!)}'
-                                      : '最初から最後まで';
-                          subtitleParts.add('${item.videoId} @ $timeRangeStr');
+                          String? timeRangeStr;
+                          if (item.startSec != null && item.endSec != null) {
+                            timeRangeStr =
+                                '${TimeFormat.formatTimeString(item.startSec!)} - ${TimeFormat.formatTimeString(item.endSec!)}';
+                          } else if (item.startSec != null) {
+                            timeRangeStr =
+                                '${TimeFormat.formatTimeString(item.startSec!)} - 最後まで';
+                          } else if (item.endSec != null) {
+                            timeRangeStr =
+                                '最初から - ${TimeFormat.formatTimeString(item.endSec!)}';
+                          }
+
+                          if (timeRangeStr != null) {
+                            subtitleParts
+                                .add('${item.videoId} @ $timeRangeStr');
+                          } else {
+                            subtitleParts.add(item.videoId);
+                          }
                           return ListTile(
                             title: Text(
                               displayTitle,

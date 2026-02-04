@@ -31,6 +31,7 @@ void main() {
     final tPlaylistJson = [jsonEncode(tPlaylistItem.toJson())];
 
     test('getPlaylist returns list of PlaylistItem', () async {
+      when(mockSharedPreferences.containsKey('playlist')).thenReturn(true);
       when(mockSharedPreferences.getStringList('playlist'))
           .thenAnswer((_) async => tPlaylistJson);
 
@@ -39,6 +40,20 @@ void main() {
       expect(result.length, 1);
       expect(result.first.videoId, tPlaylistItem.videoId);
       verify(mockSharedPreferences.getStringList('playlist'));
+    });
+
+    test('getPlaylist returns default playlist when key is missing', () async {
+      when(mockSharedPreferences.containsKey('playlist')).thenReturn(false);
+      when(mockSharedPreferences.setStringList('playlist', any))
+          .thenAnswer((_) async => {});
+
+      final result = await repository.getPlaylist();
+
+      expect(result.isNotEmpty, true);
+      expect(
+          result[0].videoId, 't7RGIiMn9Po'); // First item of default playlist
+      expect(result.length, 12); // Should have 12 items
+      verify(mockSharedPreferences.setStringList('playlist', any));
     });
 
     test('savePlaylist saves list of PlaylistItem', () async {
@@ -51,6 +66,7 @@ void main() {
     });
 
     test('addPlaylistItem adds item and saves', () async {
+      when(mockSharedPreferences.containsKey('playlist')).thenReturn(true);
       when(mockSharedPreferences.getStringList('playlist'))
           .thenAnswer((_) async => []);
       when(mockSharedPreferences.setStringList('playlist', any))
@@ -63,6 +79,7 @@ void main() {
     });
 
     test('updatePlaylistItem updates item and saves', () async {
+      when(mockSharedPreferences.containsKey('playlist')).thenReturn(true);
       when(mockSharedPreferences.getStringList('playlist'))
           .thenAnswer((_) async => tPlaylistJson);
       when(mockSharedPreferences.setStringList('playlist', any))
@@ -83,6 +100,7 @@ void main() {
     });
 
     test('removePlaylistItem removes item and saves', () async {
+      when(mockSharedPreferences.containsKey('playlist')).thenReturn(true);
       when(mockSharedPreferences.getStringList('playlist'))
           .thenAnswer((_) async => tPlaylistJson);
       when(mockSharedPreferences.setStringList('playlist', any))
