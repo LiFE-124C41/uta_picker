@@ -22,6 +22,7 @@ import '../../../platform/youtube_player/web_player.dart';
 import '../../../platform/youtube_player/desktop_player.dart';
 import '../../../core/utils/csv_export.dart';
 import '../../../core/utils/time_format.dart';
+import '../../../core/utils/web_utils.dart';
 import '../../../core/services/analytics_service.dart';
 import '../widgets/youtube_list_download_dialog.dart';
 
@@ -745,6 +746,15 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 actions: [
+                  // フルスクリーンボタン（Web版のみ）
+                  if (kIsWeb)
+                    IconButton(
+                      icon: Icon(Icons.fullscreen),
+                      onPressed: () {
+                        toggleFullScreen();
+                      },
+                      tooltip: 'フルスクリーン',
+                    ),
                   // リロードボタン（Web版のみ）
                   if (kIsWeb)
                     IconButton(
