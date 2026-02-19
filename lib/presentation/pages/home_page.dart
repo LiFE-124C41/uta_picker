@@ -21,6 +21,7 @@ import '../../../core/utils/csv_export.dart';
 import '../../../core/utils/time_format.dart';
 import '../../../core/utils/web_utils.dart';
 import '../../../core/services/analytics_service.dart';
+import '../../../core/utils/share_code_generator.dart';
 import '../widgets/youtube_list_download_dialog.dart';
 
 class HomePage extends StatefulWidget {
@@ -100,6 +101,87 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       playlist = loadedPlaylist;
     });
+
+    // Check URL parameters (Web only)
+    if (kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkUrlParameters();
+      });
+    }
+  }
+
+  bool _isUrlProcessed = false;
+
+  Future<void> _checkUrlParameters() async {
+    if (_isUrlProcessed) return;
+    _isUrlProcessed = true;
+
+    try {
+      final uri = Uri.base;
+      final code = uri.queryParameters['code'];
+      if (code != null && code.isNotEmpty) {
+        // Decode share code
+        final data = ShareCodeGenerator.decode(code);
+        final item = PlaylistItem(
+          videoId: data['videoId'],
+          startSec: data['startSec'],
+          endSec: data['endSec'],
+          songTitle: data['title'],
+        );
+
+        // 1. Add to playlist with deduplication
+        // Check against the last item to prevent simple reload duplication
+        bool alreadyExists = false;
+        if (playlist.isNotEmpty) {
+          final last = playlist.last;
+          if (last.videoId == item.videoId &&
+              last.startSec == item.startSec &&
+              last.endSec == item.endSec) {
+            alreadyExists = true;
+          }
+        }
+
+        if (!alreadyExists) {
+          await widget.playlistRepository.addPlaylistItem(item);
+          await _loadPlaylist();
+        }
+
+        // 2. Play the added item (last one)
+        if (playlist.isNotEmpty) {
+          final index = playlist.length - 1;
+          setState(() {
+            isPlayingPlaylist = true;
+            currentPlaylistIndex = index;
+          });
+          _scrollToIndex(index);
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content:
+                      Text('共有された動画を再生します: ${item.songTitle ?? item.videoId}')),
+            );
+          }
+
+          // Delay to ensure UI is ready and mitigate autoplay issues
+          await Future.delayed(Duration(seconds: 1));
+          if (mounted) {
+            _playTimeRange(item.videoId, item.startSec, item.endSec);
+          }
+        }
+
+        // Remove code from URL to prevent loop
+        resetUrl();
+      }
+    } catch (e) {
+      debugPrint('Error processing share code: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('共有コードの読み込みに失敗しました')),
+        );
+      }
+      resetUrl();
+    }
   }
 
   void loadSelectedVideoToWebview() async {

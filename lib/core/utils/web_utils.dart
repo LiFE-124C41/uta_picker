@@ -12,3 +12,7 @@ void downloadCsv(String content, String fileName) {
 void reloadPage() {
   reloadPageImpl();
 }
+
+void resetUrl() {
+  resetUrlImpl();
+}

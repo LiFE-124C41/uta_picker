@@ -1,5 +1,6 @@
 // lib/presentation/pages/playlist_management_page.dart
 import 'dart:convert';
+import 'package:flutter/services.dart'; // Clipboard
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:file_picker/file_picker.dart';
@@ -14,6 +15,7 @@ import '../../../core/utils/web_utils.dart';
 import '../../../core/utils/csv_import.dart';
 import '../../../core/utils/time_format.dart';
 import '../../../core/utils/youtube_url_parser.dart';
+import '../../../core/utils/share_code_generator.dart';
 import '../../../core/services/analytics_service.dart';
 
 class PlaylistManagementPage extends StatefulWidget {
@@ -393,6 +395,132 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
     }
   }
 
+  /// シェアコード生成ダイアログを表示
+  Future<void> _showShareCodeDialog(PlaylistItem item) async {
+    try {
+      final code = ShareCodeGenerator.encode(
+        videoId: item.videoId,
+        startSec: item.startSec,
+        endSec: item.endSec,
+        title: item.songTitle ?? item.videoTitle,
+      );
+
+      if (!mounted) return;
+      await showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text('シェアコードを生成'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('以下のコードをコピーして共有できます'),
+                SizedBox(height: 16),
+                SelectableText(
+                  code,
+                  style: TextStyle(
+                    fontFamily: 'Monospace',
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton.icon(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: code));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('コードをコピーしました')),
+                  );
+                  Navigator.pop(context);
+                },
+                icon: Icon(Icons.copy),
+                label: Text('コピー'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('閉じる'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('コード生成に失敗しました: $e')),
+      );
+    }
+  }
+
+  /// シェアコードからインポートするダイアログを表示
+  Future<void> _showImportCodeDialog() async {
+    final controller = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('コードから追加'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  labelText: 'シェアコードを入力',
+                  hintText: '共有されたコードをここに貼り付け',
+                  border: OutlineInputBorder(),
+                ),
+                minLines: 1,
+                maxLines: 3,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final code = controller.text.trim();
+                if (code.isEmpty) return;
+
+                try {
+                  final data = ShareCodeGenerator.decode(code);
+                  final newItem = PlaylistItem(
+                    videoId: data['videoId'],
+                    startSec: data['startSec'],
+                    endSec: data['endSec'],
+                    songTitle: data['title'],
+                    videoTitle: null,
+                  );
+
+                  await widget.playlistRepository.addPlaylistItem(newItem);
+                  await _loadPlaylist();
+
+                  if (!context.mounted) return;
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(
+                            '「${data['title'] ?? data['videoId']}」を追加しました')),
+                  );
+                } catch (e) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('コードの読み込みに失敗しました: $e')),
+                  );
+                }
+              },
+              child: Text('追加'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -415,14 +543,19 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                       tooltip: '追加',
                     ),
                     IconButton(
+                      icon: Icon(Icons.input),
+                      onPressed: _showImportCodeDialog,
+                      tooltip: 'コードから追加',
+                    ),
+                    IconButton(
                       icon: Icon(Icons.file_upload),
                       onPressed: _importPlaylistCsv,
-                      tooltip: '取り込み',
+                      tooltip: 'CSV取り込み',
                     ),
                     IconButton(
                       icon: Icon(Icons.file_download),
                       onPressed: _exportPlaylistCsv,
-                      tooltip: 'バックアップ',
+                      tooltip: 'CSVバックアップ',
                     ),
                     if (playlist.isNotEmpty)
                       IconButton(
@@ -480,6 +613,11 @@ class _PlaylistManagementPageState extends State<PlaylistManagementPage> {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            IconButton(
+                              icon: Icon(Icons.share),
+                              onPressed: () => _showShareCodeDialog(item),
+                              tooltip: 'シェアコード',
+                            ),
                             IconButton(
                               icon: Icon(Icons.edit_outlined),
                               onPressed: () => _showEditPlaylistItemDialog(idx),
