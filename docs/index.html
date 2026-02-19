@@ -22,6 +22,7 @@
                 <li><a href="#basic-usage">基本的な使い方</a></li>
                 <li><a href="#playlist">プレイリスト機能</a></li>
                 <li><a href="#export-import">バックアップ/取り込み機能</a></li>
+                <li><a href="#share-code">シェアコード機能</a></li>
                 <li><a href="developer-mode.html">開発者モード</a></li>
                 <li><a href="#known-issues">既知の問題</a></li>
                 <li><a href="#faq">よくある質問</a></li>
@@ -92,7 +93,8 @@
                     <ul>
                         <li><strong>動画URLまたはID（必須）</strong>: YouTubeの動画URLまたは動画ID（例: <code>dQw4w9WgXcQ</code>）</li>
                         <li><strong>開始時刻</strong>（オプション）: 「分:秒」（例: <code>00:30</code>）または「時:分:秒」（例:
-                            <code>01:07:52</code>）形式。空欄の場合は動画の最初から再生されます</li>
+                            <code>01:07:52</code>）形式。空欄の場合は動画の最初から再生されます
+                        </li>
                         <li><strong>終了時刻</strong>（オプション）: 同様の形式。空欄の場合は動画の最後まで再生されます</li>
                         <li><strong>動画タイトル</strong>（オプション）: YouTube動画のタイトル</li>
                         <li><strong>楽曲タイトル</strong>（オプション）: 曲名</li>
@@ -259,7 +261,8 @@
 
             <div class="info-box">
                 <p><strong>ファイル名について</strong>: ファイル名は自由ですが、拡張子は<code>.csv</code>である必要があります（例:
-                    <code>my_playlist.csv</code>、<code>backup_2025.csv</code>など）。</p>
+                    <code>my_playlist.csv</code>、<code>backup_2025.csv</code>など）。
+                </p>
             </div>
 
             <h4>取り込み方法</h4>
@@ -279,7 +282,8 @@
                 <li>1行目はヘッダー行（列名）</li>
                 <li>必須列: <code>video_id</code></li>
                 <li>オプション列: <code>start_sec</code>, <code>end_sec</code>, <code>video_title</code>,
-                    <code>song_title</code></li>
+                    <code>song_title</code>
+                </li>
                 <li><code>start_sec</code>と<code>end_sec</code>は数値（秒）で指定</li>
                 <li>無効な行は自動的にスキップされます</li>
             </ul>
@@ -288,6 +292,41 @@
                 <p><strong>サンプルファイル</strong>: ファイル形式の参考として、<a href="samples/playlist_export.csv"
                         download="playlist_export.csv">サンプルCSVファイルをダウンロード</a>できます。</p>
             </div>
+        </section>
+
+        <section id="share-code">
+            <h2>シェアコード機能</h2>
+            <p>特定の動画区間（開始時間・終了時間）とタイトル情報を、短いコード（シェアコード）として生成し、他のユーザーと共有することができます。</p>
+
+            <h3>シェアコードの生成</h3>
+            <ol>
+                <li>プレイリスト内の共有したいアイテムの右側にある「<span style="font-size: 1.2em;">🔗</span> シェア」アイコンをクリックします</li>
+                <li>ダイアログに表示されたコードを確認し、「コピー」ボタンをクリックします</li>
+                <li>クリップボードにコピーされたコードを、SNSやメールなどで共有できます</li>
+            </ol>
+
+            <h3>シェアコードの取り込み</h3>
+            <p>共有されたコードを使って、自分のプレイリストに動画を追加できます。</p>
+            <ol>
+                <li>プレイリスト管理画面（トップページ上部の「<span style="font-size: 1.2em;">📥</span>」入力アイコン、または管理画面内の同様のアイコン）をクリックします</li>
+                <li>表示されたダイアログにシェアコードを貼り付けます</li>
+                <li>「追加」ボタンをクリックすると、動画がプレイリストに追加されます</li>
+            </ol>
+
+            <h3>URLによる直接再生</h3>
+            <p>Web版では、URLの末尾にシェアコードをパラメータとして付与することで、その動画を即座に再生するリンクを作成できます。</p>
+            <div class="info-box">
+                <p><strong>形式:</strong> <code>https://life-124c41.github.io/uta_picker/?code=[シェアコード]</code></p>
+                <p><strong>例:</strong>
+                    <code>https://life-124c41.github.io/uta_picker/?code=AWFjalI4azQ2bUtnAAAAAOe-pOmdkuOCpOODi-OCt-OCqOODvOOCt-ODp-ODsw</code>
+                </p>
+            </div>
+            <p>このリンクを開くと、以下の動作が自動的に行われます：</p>
+            <ul>
+                <li>コードが解析され、動画情報が復元されます</li>
+                <li>動画がプレイリストの末尾に追加されます（既に同じ動画が存在する場合は追加されません）</li>
+                <li>追加された動画の再生が自動的に開始されます</li>
+            </ul>
         </section>
 
         <section id="known-issues">
