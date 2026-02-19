@@ -24,3 +24,8 @@ void downloadCsvImpl(String content, String fileName) {
 void reloadPageImpl() {
   web.window.location.reload();
 }
+
+void resetUrlImpl() {
+  // Replace current URL with pathname (removing query string)
+  web.window.history.replaceState(null, '', web.window.location.pathname);
+}

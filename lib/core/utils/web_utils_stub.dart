@@ -11,3 +11,7 @@ void downloadCsvImpl(String content, String fileName) {
 void reloadPageImpl() {
   // No-op for non-web platforms
 }
+
+void resetUrlImpl() {
+  // No-op for non-web platforms
+}
