@@ -23,7 +23,7 @@ jobs:
       version: ${{ steps.check.outputs.version }}
       pr_number: ${{ steps.check.outputs.pr_number }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Check if merge commit from release branch
         id: check
         env:
@@ -69,7 +69,7 @@ jobs:
         run: rm -rf $HOME/.flutter
 
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -231,7 +231,7 @@ jobs:
     needs: [deploy, check-release]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 0  # 全履歴を取得(タグ取得のため)
